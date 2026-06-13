@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "LifeAdmin",
+    "slug": "lifeadmin-agent-test-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F7F5EF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.lifeadmin"
+    },
+    "android": {
+      "package": "com.example.lifeadmin"
+    }
+  }
+}

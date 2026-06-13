@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native (Kotlin compiler / build artifacts not covered by android/.gitignore)
+.kotlin/
+*.orig.*
+
+# Signing keys (debug.keystore is intentionally committed)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# Metro
+.metro-health-check*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS
+.DS_Store
