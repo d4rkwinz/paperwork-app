@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     width: 5
   },
   cardEyebrow: {
-    color: "#746C61",
+    color: "#D2A24F",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0,
