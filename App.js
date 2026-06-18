@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     width: 5
   },
   cardEyebrow: {
-    color: "#bd8930",
+    color: "#D2A24F",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0,
@@ -1020,7 +1020,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18
   },
   buttonDisabled: {
-    backgroundColor: "#A8A095"
+    backgroundColor: "#978e81"
   },
   primaryButtonText: {
     color: "#FFFFFF",
