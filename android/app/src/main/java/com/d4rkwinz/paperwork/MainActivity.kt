@@ -1,4 +1,4 @@
-package com.example.lifeadmin
+package com.d4rkwinz.paperwork
 
 import android.os.Build
 import android.os.Bundle

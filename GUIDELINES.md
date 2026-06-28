@@ -1,6 +1,6 @@
-# LifeAdmin Mobile Agent Test Guidelines
+# Paperwork Mobile Agent Test Guidelines
 
-LifeAdmin is an Expo React Native app for exercising mobile agents across realistic multi-screen flows. It uses local seeded state only, so every test can run without accounts, backend services, or payment setup.
+Paperwork is an Expo React Native app for exercising mobile agents across realistic multi-screen flows. It uses local seeded state only, so every test can run without accounts, backend services, or payment setup.
 
 ## Environment
 

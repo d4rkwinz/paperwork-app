@@ -1,4 +1,4 @@
-# LifeAdmin
+# Paperwork
 
 A small Expo React Native app for testing mobile agents on realistic multi-screen flows.
 
