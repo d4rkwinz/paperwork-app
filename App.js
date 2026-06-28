@@ -227,7 +227,7 @@ function ScreenFrame({ children, canBack, onBack, onTab, activeRoot }) {
         >
           <Text style={styles.iconButtonText}>{"<"}</Text>
         </Pressable>
-        <Text style={styles.brand}>LifeAdmin</Text>
+        <Text style={styles.brand}>Paperwork</Text>
         <View style={styles.iconButtonMuted} />
       </View>
       <View style={styles.content}>{children}</View>

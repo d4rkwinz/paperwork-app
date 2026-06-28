@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "LifeAdmin",
-    "slug": "lifeadmin-agent-test-app",
+    "name": "Paperwork",
+    "slug": "paperwork-agent-test-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -10,10 +10,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.lifeadmin"
+      "bundleIdentifier": "com.d4rkwinz.paperwork"
     },
     "android": {
-      "package": "com.example.lifeadmin"
+      "package": "com.d4rkwinz.paperwork"
     }
   }
 }
