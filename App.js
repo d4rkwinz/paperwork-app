@@ -1020,7 +1020,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18
   },
   buttonDisabled: {
-    backgroundColor: "#958b7e"
+    backgroundColor: "#A8A095"
   },
   primaryButtonText: {
     color: "#FFFFFF",
@@ -1031,7 +1031,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#CFC6B8",
+    borderColor: "#9d8b6e",
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
