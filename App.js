@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18
   },
   kicker: {
-    color: "#4D65A8",
+    color: "#4d65a8",
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0,
@@ -1031,7 +1031,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#9d8b6e",
+    borderColor: "#CFC6B8",
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
