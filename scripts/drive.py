@@ -199,6 +199,77 @@ elif steps == "flow4":
     print(f"  profile now shows Office address: {'Office - 9 Market Plaza' in xml}")
     sys.exit(0 if ok and "Office - 9 Market Plaza" in xml else 1)
 
+elif steps == "back":
+    # Task 4: Android hardware back. Without the BackHandler effect, system back
+    # exits the app from any depth, so a crawler pressing it once records "app
+    # crashed" instead of "went back one screen".
+    print("Hardware back: depth walk, root background, modal dismissal")
+    ok = True
+
+    def press_back():
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        time.sleep(1.8)
+
+    def focused():
+        out = adb("shell", "dumpsys", "window")
+        m = re.search(r"mCurrentFocus=Window\{[^}]*\s(\S+)\}", out)
+        return m.group(1) if m else "none"
+
+    def alive():
+        return bool(adb("shell", "pidof", "com.d4rkwinz.paperwork").strip())
+
+    def expect(label, needle, want=True):
+        global ok
+        got = needle.lower() in dump().lower()
+        print(f"  {label}: {needle!r} present={got} (want {want})")
+        if got != want:
+            ok = False
+
+    # Descend to BookingReview: Home -> ServiceDetail -> BookingForm -> BookingReview
+    ok &= tap("Open Plumber")
+    ok &= tap("Book this service")
+    ok &= tap("Tomorrow")
+    ok &= tap("8:00 AM")
+    ok &= tap("Review booking")
+    expect("depth 4 is BookingReview", "Confirm details")
+
+    press_back()
+    expect("back -> BookingForm", "New booking")
+    press_back()
+    expect("back -> ServiceDetail", "Book this service")
+    press_back()
+    expect("back -> Home", "What needs handling?")
+
+    print(f"  focus before root back: {focused()}")
+    press_back()
+    foreground = focused()
+    still_alive = alive()
+    print(f"  focus after root back: {foreground}")
+    print(f"  process still alive (did not crash): {still_alive}")
+    backgrounded = "paperwork" not in foreground.lower()
+    print(f"  app backgrounded rather than crashed: {backgrounded and still_alive}")
+    if not (backgrounded and still_alive):
+        ok = False
+
+    # Modal dismissal must not perform the destructive action.
+    adb("shell", "am", "start", "-n", "com.d4rkwinz.paperwork/.MainActivity")
+    time.sleep(5)
+    ok &= tap("Requests tab")
+    ok &= tap("Open request REQ-1042")
+    ok &= tap("Cancel request")
+    expect("confirm modal open", "Cancel request?")
+    press_back()
+    expect("modal dismissed by back", "Cancel request?", want=False)
+    xml = dump()
+    print(f"  request still Active after dismissal: {'Active' in xml}")
+    print(f"  request NOT canceled: {'Canceled' not in xml}")
+    if "Canceled" in xml:
+        ok = False
+    shot("10-back-modal-dismissed")
+
+    print(f"\nback-behavior all expectations met: {ok}")
+    sys.exit(0 if ok else 1)
+
 else:
-    print(f"unknown flow {steps!r}; expected flow1|flow2|flow3|flow4")
+    print(f"unknown flow {steps!r}; expected flow1|flow2|flow3|flow4|back")
     sys.exit(2)
