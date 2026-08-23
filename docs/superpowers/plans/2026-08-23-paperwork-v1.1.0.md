@@ -181,6 +181,24 @@ git add scripts package.json app.json .gitignore
 git commit -m "build: add node selfcheck harness and bundle check, bump to 1.1.0"
 ```
 
+**Amendment (applied during execution).** The `harness.test.js` shown in Step 1
+above is a tautology — `1+1 === 2` and `assert.ok(true)` can never fail, so
+nothing re-verifies that the harness can detect a failure once Step 2's one-time
+manual inversion is over. Review also found two real defects in the Step 1
+`selfcheck.js`: `throw null` / `throw undefined` in a test file makes `err.message`
+throw inside the `catch`, which skips every remaining test file; and an assertion
+inside a `setTimeout` or promise callback silently reports PASS, because
+`process.exit()` runs before the callback fires.
+
+Resolution, committed on top of Task 1: `selfcheck.js` takes an optional target
+directory (default `__dirname`, so `yarn selfcheck` is unchanged), formats any
+thrown value totally, and carries a `ponytail:` comment naming the synchronous-only
+ceiling. `harness.test.js` is now a real meta-test that spawns `selfcheck.js`
+against fixture directories under `scripts/fixtures/` and asserts exit codes for
+four cases: a throwing test, a passing test, an empty directory, and a `throw null`
+file followed by a second file that must still run. **`scripts/` is the source of
+truth for this code — the Step 1 blocks above are the superseded first draft.**
+
 ---
 
 ### Task 2: Extract modules from App.js — no behavior change
