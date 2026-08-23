@@ -1,6 +1,9 @@
 import React from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import styles from "./styles";
+import { slug } from "./slug";
+
+export { slug };
 
 export function Tab({ label, active, onPress }) {
   return (
@@ -121,8 +124,4 @@ export function notificationSummary(profile) {
   ].filter(Boolean);
   const base = channels.length ? channels.join(", ") : "no channels";
   return `${base}${profile.quietHours ? " with quiet hours enabled" : ""}.`;
-}
-
-export function slug(value) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }

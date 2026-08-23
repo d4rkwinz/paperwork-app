@@ -2,8 +2,20 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const data = require("../src/data.js");
+const { slug } = require("../src/slug.js");
 
 const { SERVICES, DATES, TIMES, PRIORITIES, ADDRESSES, INITIAL_REQUESTS, ROUTE_META } = data;
+
+// slug() is the single source of truth for testID derivation across the
+// whole project (screens, ui.js, and this test all use src/slug.js) - a
+// later task generates 22 more routes' testIDs from it, so pin its known
+// mappings here to catch any accidental behavior change at the source.
+assert.strictEqual(slug("8:00 AM"), "8-00-am", 'slug("8:00 AM") is stable');
+assert.strictEqual(
+  slug("Office - 9 Market Plaza"),
+  "office-9-market-plaza",
+  'slug("Office - 9 Market Plaza") is stable'
+);
 
 assert.ok(Array.isArray(SERVICES) && SERVICES.length > 0, "SERVICES is a non-empty array");
 
@@ -92,26 +104,50 @@ for (const entry of ROUTE_META) {
   }
 }
 
-// Every anchor must be a real testID somewhere under src/screens or src/ui.js.
-// This is a plain text/regex scan of source (same technique scripts/check-graph.js
-// later uses on App.js) - it has no idea what actually renders at runtime.
+// Every anchor must be a real testID in the specific file that renders the
+// route declaring it - not merely somewhere in the union of all screen
+// sources. A global union lets a copy-paste mistake in a ROUTE_META entry
+// (e.g. RequestDetail claiming Login's "login-submit") pass silently, since
+// that testID is real, just not RequestDetail's. This is a plain text/regex
+// scan of source (same technique scripts/wiring.test.js already uses on
+// App.js, and scripts/check-graph.js later uses too) - it has no idea what
+// actually renders at runtime.
 //
-// What it catches: typos, renames, and deletions of testID literals - the
-// exact bug class where an anchor quietly stops existing anywhere in source.
-// What it CANNOT catch: whether an anchor is conditionally rendered (i.e.
-// only present in some states of a route, like forgot-submit disappearing
-// after ForgotPassword's "sent" state) - that judgement stays manual.
+// What it catches: typos, renames, deletions, and copy-paste mistakes -
+// anchors that quietly stop existing in the route's own source. What it
+// CANNOT catch: whether an anchor is conditionally rendered (i.e. only
+// present in some states of a route, like forgot-submit disappearing after
+// ForgotPassword's "sent" state) - that judgement stays manual.
 const screensDir = path.join(__dirname, "..", "src", "screens");
-const sourceText = fs
+
+// Resolve route name -> component identifier from App.js's ROUTES map
+// (App.js is JSX and can't be require()'d from plain node).
+const appSrc = fs.readFileSync(path.join(__dirname, "..", "App.js"), "utf8");
+const routesBlockMatch = appSrc.match(/const ROUTES = \{([\s\S]*?)\n\};/);
+assert.ok(routesBlockMatch, "expected a `const ROUTES = { ... };` map in App.js");
+const routeToComponent = {};
+for (const rawEntry of routesBlockMatch[1].split(",").map((s) => s.trim()).filter(Boolean)) {
+  const [routeName, component] = rawEntry.split(":").map((s) => s.trim());
+  routeToComponent[routeName] = component;
+}
+
+// Resolve each component identifier to the file that exports it, by
+// scanning src/screens/*.js and src/ui.js for `export function <Identifier>`.
+const screenFilePaths = fs
   .readdirSync(screensDir)
   .filter((f) => f.endsWith(".js"))
-  .map((f) => fs.readFileSync(path.join(screensDir, f), "utf8"))
-  .concat(fs.readFileSync(path.join(__dirname, "..", "src", "ui.js"), "utf8"))
-  .join("\n");
+  .map((f) => path.join(screensDir, f));
+const uiPath = path.join(__dirname, "..", "src", "ui.js");
+const sourceFilePaths = screenFilePaths.concat([uiPath]);
 
-const literalTestIds = new Set();
-for (const m of sourceText.matchAll(/testID="([^"]+)"/g)) {
-  literalTestIds.add(m[1]);
+const fileTextByPath = new Map();
+const componentToFile = {};
+for (const filePath of sourceFilePaths) {
+  const text = fs.readFileSync(filePath, "utf8");
+  fileTextByPath.set(filePath, text);
+  for (const m of text.matchAll(/export function (\w+)/g)) {
+    componentToFile[m[1]] = filePath;
+  }
 }
 
 // Dynamic testIDs (testID={`...`}) can't be matched by exact string, and a
@@ -122,39 +158,59 @@ for (const m of sourceText.matchAll(/testID="([^"]+)"/g)) {
 // exists to catch. Instead, reconstruct the real, finite set of values each
 // dynamic testID can take from the same data this app renders from, which
 // this test already has (SERVICES, ADDRESSES, and each ChoiceRow's declared
-// options).
-const slug = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-const dynamicTestIds = new Set();
-for (const service of SERVICES) {
-  dynamicTestIds.add(`service-${service.id}`);
-}
-for (const address of ADDRESSES) {
-  dynamicTestIds.add(`select-address-${slug(address)}`);
-}
-
-// ChoiceRow (src/ui.js) renders one option per <ChoiceRow options={...}
-// testPrefix="..."> call site as testID={`${testPrefix}-${slug(option)}`}.
-// Resolve each call site's options - either an inline string array, or one
-// of this same module's exported option lists - against its testPrefix.
+// options) - scoped to only the file whose text actually contains that
+// dynamic template, so the reconstruction doesn't leak values into files
+// that never render them.
 const KNOWN_OPTION_LISTS = { DATES, TIMES, PRIORITIES, ADDRESSES };
-for (const m of sourceText.matchAll(/<ChoiceRow\s+([^>]*?)\/>/g)) {
-  const tag = m[1];
-  const prefixMatch = tag.match(/testPrefix="([^"]+)"/);
-  const optionsMatch = tag.match(/options=\{(\[[^\]]*\]|[A-Z_]+)\}/);
-  if (!prefixMatch || !optionsMatch) continue; // unresolvable shape - anchors relying on it correctly fail below
-  const options = optionsMatch[1].startsWith("[") ? JSON.parse(optionsMatch[1]) : KNOWN_OPTION_LISTS[optionsMatch[1]] || [];
-  for (const option of options) {
-    dynamicTestIds.add(`${prefixMatch[1]}-${slug(option)}`);
+function buildTestIdsForFile(text) {
+  const ids = new Set();
+  for (const m of text.matchAll(/testID="([^"]+)"/g)) {
+    ids.add(m[1]);
   }
+  if (text.includes("testID={`service-${service.id}`}")) {
+    for (const service of SERVICES) ids.add(`service-${service.id}`);
+  }
+  if (text.includes("testID={`select-address-${slug(address)}`}")) {
+    for (const address of ADDRESSES) ids.add(`select-address-${slug(address)}`);
+  }
+  // ChoiceRow (src/ui.js) renders one option per <ChoiceRow options={...}
+  // testPrefix="..."> call site as testID={`${testPrefix}-${slug(option)}`}.
+  // Resolve each call site's options - either an inline string array, or one
+  // of this same module's exported option lists - against its testPrefix.
+  for (const m of text.matchAll(/<ChoiceRow\s+([^>]*?)\/>/g)) {
+    const tag = m[1];
+    const prefixMatch = tag.match(/testPrefix="([^"]+)"/);
+    const optionsMatch = tag.match(/options=\{(\[[^\]]*\]|[A-Z_]+)\}/);
+    if (!prefixMatch || !optionsMatch) continue; // unresolvable shape - anchors relying on it correctly fail below
+    const options = optionsMatch[1].startsWith("[") ? JSON.parse(optionsMatch[1]) : KNOWN_OPTION_LISTS[optionsMatch[1]] || [];
+    for (const option of options) {
+      ids.add(`${prefixMatch[1]}-${slug(option)}`);
+    }
+  }
+  return ids;
+}
+
+const testIdsByFile = new Map();
+for (const [filePath, text] of fileTextByPath) {
+  testIdsByFile.set(filePath, buildTestIdsForFile(text));
 }
 
 for (const entry of ROUTE_META) {
+  const component = routeToComponent[entry.name];
+  assert.ok(
+    component,
+    `ROUTE_META.${entry.name} has no matching entry in App.js's ROUTES map - cannot resolve which file renders it`
+  );
+  const file = componentToFile[component];
+  assert.ok(
+    file,
+    `ROUTE_META.${entry.name}'s component "${component}" has no "export function ${component}" found under src/screens/*.js or src/ui.js`
+  );
+  const fileTestIds = testIdsByFile.get(file);
   for (const anchor of entry.anchors) {
-    const found = literalTestIds.has(anchor) || dynamicTestIds.has(anchor);
     assert.ok(
-      found,
-      `ROUTE_META.${entry.name} declares anchor "${anchor}", but no testID matching it was found under src/screens/*.js or src/ui.js - check for a typo, a rename, or an anchor that only exists in some of the route's states`
+      fileTestIds.has(anchor),
+      `ROUTE_META.${entry.name} declares anchor "${anchor}", but no testID matching it was found in ${path.relative(path.join(__dirname, ".."), file)} (the file that renders ${entry.name}) - check for a typo, a rename, a copy-paste from another route's anchor, or an anchor that only exists in some of the route's states`
     );
   }
 }
