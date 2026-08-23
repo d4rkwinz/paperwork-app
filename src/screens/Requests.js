@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { DATES, PRIORITIES, TIMES } from "../data";
-import { ChoiceRow, PrimaryButton, ReviewBlock, SecondaryButton } from "../ui";
+import { ChoiceRow, NotFound, PrimaryButton, ReviewBlock, SecondaryButton } from "../ui";
 import styles from "../styles";
 
-export function RequestsScreen({ nav, requests }) {
+export function RequestsScreen({ nav, params, app }) {
   const [filter, setFilter] = useState("Active");
-  const visibleRequests = requests.filter((request) => (filter === "All" ? true : request.status === filter));
+  const visibleRequests = app.requests.filter((request) => (filter === "All" ? true : request.status === filter));
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
@@ -35,19 +35,24 @@ export function RequestsScreen({ nav, requests }) {
   );
 }
 
-export function RequestDetailScreen({ nav, request, saved, onCancel }) {
+export function RequestDetailScreen({ nav, params, app }) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const request = app.requests.find((item) => item.id === params.requestId);
 
   if (!request) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.h2}>Request not found</Text>
-        <SecondaryButton label="Go to requests" testID="missing-request-back" onPress={() => nav.root("Requests")} />
-      </View>
-    );
+    return <NotFound label="Request" nav={nav} />;
   }
 
   const editable = request.status === "Active";
+  const saved = params.saved;
+
+  const cancelRequest = (requestId) => {
+    app.setRequests((current) =>
+      current.map((item) =>
+        item.id === requestId ? { ...item, status: "Canceled", timeline: [...item.timeline, "Canceled"] } : item
+      )
+    );
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
@@ -84,7 +89,7 @@ export function RequestDetailScreen({ nav, request, saved, onCancel }) {
               label="Yes, cancel"
               testID="confirm-cancel-request"
               onPress={() => {
-                onCancel(request.id);
+                cancelRequest(request.id);
                 setConfirmingCancel(false);
               }}
             />
@@ -96,11 +101,17 @@ export function RequestDetailScreen({ nav, request, saved, onCancel }) {
   );
 }
 
-export function EditRequestScreen({ nav, request }) {
-  const [date, setDate] = useState(request.date);
-  const [time, setTime] = useState(request.time);
-  const [priority, setPriority] = useState(request.priority);
-  const [notes, setNotes] = useState(request.notes);
+export function EditRequestScreen({ nav, params, app }) {
+  const { request } = params;
+  const [date, setDate] = useState(request?.date);
+  const [time, setTime] = useState(request?.time);
+  const [priority, setPriority] = useState(request?.priority);
+  const [notes, setNotes] = useState(request?.notes);
+
+  if (!request) {
+    return <NotFound label="Request" nav={nav} />;
+  }
+
   const updatedRequest = { ...request, date, time, priority, notes };
 
   return (
@@ -131,7 +142,14 @@ export function EditRequestScreen({ nav, request }) {
   );
 }
 
-export function EditRequestReviewScreen({ nav, request, onSave }) {
+export function EditRequestReviewScreen({ nav, params, app }) {
+  const { request } = params;
+
+  const updateRequest = (updated) => {
+    app.setRequests((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    nav.replace("RequestDetail", { requestId: updated.id, saved: true });
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={styles.kicker}>Review changes</Text>
@@ -145,7 +163,7 @@ export function EditRequestReviewScreen({ nav, request, onSave }) {
       <PrimaryButton
         label="Save changes"
         testID="save-request-changes"
-        onPress={() => onSave({ ...request, timeline: [...request.timeline, "Updated"] })}
+        onPress={() => updateRequest({ ...request, timeline: [...request.timeline, "Updated"] })}
       />
       <SecondaryButton
         label="Edit details"

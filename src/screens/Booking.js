@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ADDRESSES, DATES, PRIORITIES, SERVICES, TIMES } from "../data";
-import { ChoiceRow, Metric, PrimaryButton, ReviewBlock, SecondaryButton } from "../ui";
+import { ChoiceRow, Metric, NotFound, PrimaryButton, ReviewBlock, SecondaryButton } from "../ui";
 import styles from "../styles";
 
-export function HomeScreen({ nav }) {
+export function HomeScreen({ nav, params, app }) {
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.hero}>
@@ -42,8 +42,12 @@ export function HomeScreen({ nav }) {
   );
 }
 
-export function ServiceDetailScreen({ nav, serviceId }) {
-  const service = SERVICES.find((item) => item.id === serviceId);
+export function ServiceDetailScreen({ nav, params, app }) {
+  const service = SERVICES.find((item) => item.id === params.serviceId);
+  if (!service) {
+    return <NotFound label="Service" nav={nav} />;
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={[styles.detailHeader, { borderColor: service.accent }]}>
@@ -65,21 +69,26 @@ export function ServiceDetailScreen({ nav, serviceId }) {
       <PrimaryButton
         label="Book this service"
         testID="book-service"
-        onPress={() => nav.push("BookingForm", { serviceId })}
+        onPress={() => nav.push("BookingForm", { serviceId: service.id })}
       />
     </ScrollView>
   );
 }
 
-export function BookingFormScreen({ nav, serviceId, defaultAddress, initialDraft }) {
+export function BookingFormScreen({ nav, params, app }) {
+  const { serviceId, draft: initialDraft } = params;
   const service = SERVICES.find((item) => item.id === serviceId);
   const [date, setDate] = useState(initialDraft?.date || "");
   const [time, setTime] = useState(initialDraft?.time || "");
-  const [address, setAddress] = useState(initialDraft?.address || defaultAddress);
+  const [address, setAddress] = useState(initialDraft?.address || app.profile.primaryAddress);
   const [priority, setPriority] = useState(initialDraft?.priority || "Normal");
   const [notes, setNotes] = useState(initialDraft?.notes || "");
-  const canContinue = date && time && address;
 
+  if (!service) {
+    return <NotFound label="Service" nav={nav} />;
+  }
+
+  const canContinue = date && time && address;
   const booking = { serviceId, date, time, address, priority, notes };
 
   return (
@@ -114,8 +123,26 @@ export function BookingFormScreen({ nav, serviceId, defaultAddress, initialDraft
   );
 }
 
-export function BookingReviewScreen({ nav, booking, onCreate }) {
+export function BookingReviewScreen({ nav, params, app }) {
+  const { booking } = params;
   const service = SERVICES.find((item) => item.id === booking.serviceId);
+
+  const createRequest = () => {
+    const request = {
+      id: `REQ-${Math.floor(1100 + Math.random() * 800)}`,
+      serviceId: booking.serviceId,
+      title: service.title,
+      status: "Active",
+      date: booking.date,
+      time: booking.time,
+      address: booking.address,
+      priority: booking.priority,
+      notes: booking.notes || "No extra notes.",
+      timeline: ["Booked"]
+    };
+    app.setRequests((current) => [request, ...current]);
+    nav.push("BookingConfirmation", { request });
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
@@ -129,7 +156,7 @@ export function BookingReviewScreen({ nav, booking, onCreate }) {
         ["Priority", booking.priority],
         ["Notes", booking.notes || "No extra notes."]
       ]} />
-      <PrimaryButton label="Submit booking" testID="submit-booking" onPress={() => onCreate(booking)} />
+      <PrimaryButton label="Submit booking" testID="submit-booking" onPress={createRequest} />
       <SecondaryButton
         label="Edit details"
         testID="edit-booking-details"
@@ -139,7 +166,8 @@ export function BookingReviewScreen({ nav, booking, onCreate }) {
   );
 }
 
-export function BookingConfirmationScreen({ nav, request }) {
+export function BookingConfirmationScreen({ nav, params, app }) {
+  const { request } = params;
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.successPanel}>

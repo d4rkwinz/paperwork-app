@@ -101,6 +101,18 @@ export function SecondaryButton({ label, onPress, testID, danger }) {
   );
 }
 
+export function NotFound({ label, nav }) {
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.h2}>{label} not found</Text>
+      <Text style={styles.bodyText}>
+        This item no longer exists. It may have been removed or the app was reset.
+      </Text>
+      <SecondaryButton label="Go home" testID="notfound-home" onPress={() => nav.root("Home")} />
+    </View>
+  );
+}
+
 export function notificationSummary(profile) {
   const channels = [
     profile.notifyPush && "push",

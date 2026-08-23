@@ -4,7 +4,8 @@ import { ADDRESSES } from "../data";
 import { ToggleRow, notificationSummary, slug } from "../ui";
 import styles from "../styles";
 
-export function ProfileScreen({ nav, profile, setProfile }) {
+export function ProfileScreen({ nav, params, app }) {
+  const { profile, setProfile } = app;
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={styles.kicker}>Profile</Text>
@@ -51,7 +52,8 @@ export function ProfileScreen({ nav, profile, setProfile }) {
   );
 }
 
-export function PreferencesScreen({ profile, setProfile }) {
+export function PreferencesScreen({ nav, params, app }) {
+  const { profile, setProfile } = app;
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={styles.kicker}>Preferences</Text>
@@ -68,7 +70,8 @@ export function PreferencesScreen({ profile, setProfile }) {
   );
 }
 
-export function AddressesScreen({ profile, setProfile }) {
+export function AddressesScreen({ nav, params, app }) {
+  const { profile, setProfile } = app;
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={styles.kicker}>Addresses</Text>
