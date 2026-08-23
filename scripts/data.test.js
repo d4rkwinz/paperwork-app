@@ -1,4 +1,6 @@
 const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
 const data = require("../src/data.js");
 
 const { SERVICES, DATES, TIMES, PRIORITIES, ADDRESSES, INITIAL_REQUESTS, ROUTE_META } = data;
@@ -86,6 +88,73 @@ for (const entry of ROUTE_META) {
     assert.ok(
       routeNameSet.has(edge.to),
       `ROUTE_META.${entry.name} has an edge to "${edge.to}", which is not a real ROUTE_META entry`
+    );
+  }
+}
+
+// Every anchor must be a real testID somewhere under src/screens or src/ui.js.
+// This is a plain text/regex scan of source (same technique scripts/check-graph.js
+// later uses on App.js) - it has no idea what actually renders at runtime.
+//
+// What it catches: typos, renames, and deletions of testID literals - the
+// exact bug class where an anchor quietly stops existing anywhere in source.
+// What it CANNOT catch: whether an anchor is conditionally rendered (i.e.
+// only present in some states of a route, like forgot-submit disappearing
+// after ForgotPassword's "sent" state) - that judgement stays manual.
+const screensDir = path.join(__dirname, "..", "src", "screens");
+const sourceText = fs
+  .readdirSync(screensDir)
+  .filter((f) => f.endsWith(".js"))
+  .map((f) => fs.readFileSync(path.join(screensDir, f), "utf8"))
+  .concat(fs.readFileSync(path.join(__dirname, "..", "src", "ui.js"), "utf8"))
+  .join("\n");
+
+const literalTestIds = new Set();
+for (const m of sourceText.matchAll(/testID="([^"]+)"/g)) {
+  literalTestIds.add(m[1]);
+}
+
+// Dynamic testIDs (testID={`...`}) can't be matched by exact string, and a
+// generic wildcard regex here is actively dangerous: e.g. Requests.js's card
+// testID={`request-${request.id}`} would make a regex like /^request-.*$/
+// match almost any broken anchor that happens to start with "request-",
+// including a typo'd "request-detail" - exactly the bug class this check
+// exists to catch. Instead, reconstruct the real, finite set of values each
+// dynamic testID can take from the same data this app renders from, which
+// this test already has (SERVICES, ADDRESSES, and each ChoiceRow's declared
+// options).
+const slug = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+const dynamicTestIds = new Set();
+for (const service of SERVICES) {
+  dynamicTestIds.add(`service-${service.id}`);
+}
+for (const address of ADDRESSES) {
+  dynamicTestIds.add(`select-address-${slug(address)}`);
+}
+
+// ChoiceRow (src/ui.js) renders one option per <ChoiceRow options={...}
+// testPrefix="..."> call site as testID={`${testPrefix}-${slug(option)}`}.
+// Resolve each call site's options - either an inline string array, or one
+// of this same module's exported option lists - against its testPrefix.
+const KNOWN_OPTION_LISTS = { DATES, TIMES, PRIORITIES, ADDRESSES };
+for (const m of sourceText.matchAll(/<ChoiceRow\s+([^>]*?)\/>/g)) {
+  const tag = m[1];
+  const prefixMatch = tag.match(/testPrefix="([^"]+)"/);
+  const optionsMatch = tag.match(/options=\{(\[[^\]]*\]|[A-Z_]+)\}/);
+  if (!prefixMatch || !optionsMatch) continue; // unresolvable shape - anchors relying on it correctly fail below
+  const options = optionsMatch[1].startsWith("[") ? JSON.parse(optionsMatch[1]) : KNOWN_OPTION_LISTS[optionsMatch[1]] || [];
+  for (const option of options) {
+    dynamicTestIds.add(`${prefixMatch[1]}-${slug(option)}`);
+  }
+}
+
+for (const entry of ROUTE_META) {
+  for (const anchor of entry.anchors) {
+    const found = literalTestIds.has(anchor) || dynamicTestIds.has(anchor);
+    assert.ok(
+      found,
+      `ROUTE_META.${entry.name} declares anchor "${anchor}", but no testID matching it was found under src/screens/*.js or src/ui.js - check for a typo, a rename, or an anchor that only exists in some of the route's states`
     );
   }
 }

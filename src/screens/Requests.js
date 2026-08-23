@@ -57,7 +57,7 @@ export function RequestDetailScreen({ nav, params, app }) {
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       {saved && <Text style={styles.savedNotice}>Changes saved.</Text>}
-      <Text style={styles.kicker}>{request.id}</Text>
+      <Text testID="request-detail" accessibilityLabel={`Request ${request.id}`} style={styles.kicker}>{request.id}</Text>
       <Text style={styles.h1}>{request.title}</Text>
       <ReviewBlock rows={[
         ["Status", request.status],
