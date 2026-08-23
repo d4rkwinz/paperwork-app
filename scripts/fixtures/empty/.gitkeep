@@ -1,0 +1,2 @@
+Deliberately empty: no *.test.js files. Used by selfcheck.test.js to verify
+selfcheck.js exits non-zero and reports that no test files were found.
