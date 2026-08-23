@@ -37,8 +37,11 @@ def wake(tries=3):
         time.sleep(0.8)
         power = adb("shell", "dumpsys", "power")
         awake = "mWakefulness=Awake" in power
+        # Match only the CURRENT focus line: "NotificationShade" also appears
+        # as a background window entry, which made this warn spuriously.
         focus = adb("shell", "dumpsys", "window")
-        shade = "NotificationShade" in focus
+        m = re.search(r"mCurrentFocus=\S+ \S+ (\S+)\}", focus)
+        shade = bool(m) and "NotificationShade" in m.group(1)
         if awake and not shade:
             print(f"  device awake and unlocked")
             return True
@@ -336,6 +339,27 @@ elif steps == "back":
     shot("10-back-modal-dismissed")
 
     print(f"\nback-behavior all expectations met: {ok}")
+    sys.exit(0 if ok else 1)
+
+elif steps == "anchors":
+    # Fix pass: RequestDetail must be addressable in EVERY state. REQ-0977 is
+    # seeded Completed, so edit-request/cancel-request do not render there - it
+    # previously had no testID at all in that state.
+    print("Anchors: RequestDetail addressable when not Active")
+    ok = True
+    ok &= pass_gate(guest=True)
+    ok &= tap("Requests tab")
+    ok &= tap("Completed")
+    ok &= tap("Open request REQ-0977")
+    xml = dump()
+    has_anchor = "request-detail" in xml or "Request detail" in xml
+    print(f"  on a Completed request: status shown = {'Completed' in xml}")
+    print(f"  edit-request absent (expected, not Active): {'Edit request' not in xml}")
+    print(f"  stable anchor present: {has_anchor}")
+    if not (has_anchor and "Completed" in xml):
+        ok = False
+    shot("13-anchor-completed")
+    print(f"\nanchor expectations met: {ok}")
     sys.exit(0 if ok else 1)
 
 elif steps == "auth":
