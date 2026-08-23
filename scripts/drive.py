@@ -20,6 +20,34 @@ def adb(*args, binary=False):
     return out.stdout.decode("utf-8", "replace")
 
 
+def wake(tries=3):
+    """Wake and unlock the device, and dismiss the notification shade.
+
+    The device dozes off between builds; a dozing screen produces an empty
+    uiautomator dump, which reads as "every element is missing" and looks
+    exactly like a total app failure. Two false failures came from this before
+    it was handled here rather than at each call site.
+    """
+    for attempt in range(tries):
+        adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
+        time.sleep(1.0)
+        adb("shell", "wm", "dismiss-keyguard")
+        time.sleep(1.0)
+        adb("shell", "cmd", "statusbar", "collapse")
+        time.sleep(0.8)
+        power = adb("shell", "dumpsys", "power")
+        awake = "mWakefulness=Awake" in power
+        focus = adb("shell", "dumpsys", "window")
+        shade = "NotificationShade" in focus
+        if awake and not shade:
+            print(f"  device awake and unlocked")
+            return True
+        adb("shell", "input", "swipe", "720", "2600", "720", "1200", "200")
+        time.sleep(1.5)
+    print("  WARN: could not confirm device is awake and unlocked")
+    return False
+
+
 def dump(tries=4):
     """Return the current UI hierarchy XML, or "" if it could not be captured.
 
@@ -110,7 +138,47 @@ def shot(name):
     print(f"  screenshot {path} ({len(png) // 1024} KB)")
 
 
+def type_into(desc, text):
+    """Focus a field by accessibilityLabel and type into it."""
+    hit = find(dump(), desc)
+    if not hit:
+        print(f"  FAIL: field {desc!r} not found")
+        return False
+    adb("shell", "input", "tap", str(hit[0]), str(hit[1]))
+    time.sleep(0.8)
+    adb("shell", "input", "text", text)
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")  # dismiss keyboard
+    time.sleep(1.0)
+    print(f"  typed into {desc!r}")
+    return True
+
+
+def pass_gate(guest=True):
+    """Get past the Task 5 auth gate. The guest path is the shortest route to
+    the shell, so the four documented flows use it; sign-in is exercised by the
+    'auth' flow instead."""
+    if not visible("Sign in", exact=True):
+        print("  gate not present (already inside the shell)")
+        return True
+    if guest:
+        return tap("Continue as guest")
+    ok = type_into("Email address", "alex@example.com")
+    ok &= type_into("Password", "hunter2")
+    ok &= tap("Sign in")
+    ok &= tap("Skip")  # leave Onboarding
+    return ok
+
+
 steps = sys.argv[1] if len(sys.argv) > 1 else "flow1"
+
+wake()
+
+# Every shell flow now starts behind the gate.
+if steps in ("flow1", "flow2", "flow3", "flow4", "back"):
+    print("passing auth gate (guest path)")
+    if not pass_gate(guest=True):
+        print("FATAL: could not get past the auth gate")
+        sys.exit(1)
 
 if steps == "flow1":
     print("Flow 1: book a plumber for tomorrow morning at the home address")
@@ -270,6 +338,72 @@ elif steps == "back":
     print(f"\nback-behavior all expectations met: {ok}")
     sys.exit(0 if ok else 1)
 
+elif steps == "auth":
+    # Task 5 traps: gated submit, form input retention, onboarding step aliasing.
+    print("Auth gate: input retention, disabled submit, onboarding steps")
+    ok = True
+
+    xml = dump()
+    print(f"  launches on Login: {'Sign in' in xml}")
+    print(f"  tab bar hidden pre-auth: {'Requests tab' not in xml}")
+    print(f"  back button absent on Login: {'Go back' not in xml}")
+    if "Sign in" not in xml or "Requests tab" in xml or "Go back" in xml:
+        ok = False
+
+    # The form must retain typed input. If a stray re-key remounts the screen,
+    # the text vanishes - that is the failure mode worth proving absent.
+    ok &= type_into("Email address", "alex@example.com")
+    retained = "alex@example.com" in dump()
+    print(f"  email retained after typing: {retained}")
+    if not retained:
+        ok = False
+
+    # Submit must still be inert with only one field filled.
+    before = dump()
+    still_on_login = "Sign in" in before
+    ok &= tap("Sign in")
+    time.sleep(1.0)
+    gated = "Sign in" in dump()
+    print(f"  submit inert with password empty: {gated}")
+    if not gated:
+        ok = False
+
+    ok &= type_into("Password", "hunter2")
+    both = dump()
+    print(f"  both fields retained: {'alex@example.com' in both}")
+    ok &= tap("Sign in")
+    shot("11-auth-onboarding-1")
+
+    xml = dump()
+    on_onboarding = "Step 1 of 3, current" in xml
+    print(f"  signed in -> Onboarding step 1: {on_onboarding}")
+    if not on_onboarding:
+        ok = False
+
+    ok &= tap("Next")
+    step2 = "Step 2 of 3, current" in dump()
+    print(f"  step 2 reached: {step2}")
+    ok &= tap("Next")
+    step3 = "Step 3 of 3, current" in dump()
+    print(f"  step 3 reached: {step3}")
+    if not (step2 and step3):
+        ok = False
+
+    # Step 3's button label changes to "Get started" (PrimaryButton mirrors
+    # label into accessibilityLabel), so the final advance is not "Next".
+    ok &= tap("Get started")
+    xml = dump()
+    reached_home = "What needs handling?" in xml
+    tabs_back = "Requests tab" in xml
+    print(f"  step 3 exits to Home: {reached_home}")
+    print(f"  tab bar restored inside shell: {tabs_back}")
+    if not (reached_home and tabs_back):
+        ok = False
+    shot("12-auth-home")
+
+    print(f"\nauth expectations all met: {ok}")
+    sys.exit(0 if ok else 1)
+
 else:
-    print(f"unknown flow {steps!r}; expected flow1|flow2|flow3|flow4|back")
+    print(f"unknown flow {steps!r}; expected flow1|flow2|flow3|flow4|back|auth")
     sys.exit(2)
