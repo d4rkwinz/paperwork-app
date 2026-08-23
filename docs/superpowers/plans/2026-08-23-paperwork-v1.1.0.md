@@ -151,7 +151,7 @@ In `package.json`, set `"version": "1.1.0"` and add to `scripts`:
 
 ```json
 "selfcheck": "node scripts/selfcheck.js",
-"bundle-check": "expo export --platform all --output-dir .expo/bundle-check --clear"
+"bundle-check": "expo export --platform ios --platform android --output-dir .expo/bundle-check --clear"
 ```
 
 In `app.json`, set `"version": "1.1.0"`.
@@ -1675,3 +1675,8 @@ device or emulator — it cannot be covered by any of the three commands above.
 | `react-native-safe-area-context` | Only if Expo already provides it; `ANDROID_NAV_BAR_GAP_ANDROID = 48` stays a named knob until then |
 | Unbounded generators | A crawler passes the bounded fixture and you need termination pressure |
 | UI test framework | Manual flow-walking becomes the bottleneck, not the fixture |
+
+## Verified environment facts (recorded during execution)
+
+- `--platform all` fails: this app has no `react-native-web` dependency or web config, and adding one would violate the no-new-dependencies constraint. The working invocation bundles only the platforms the app supports, with the flag repeated (`--platform ios,android` is not accepted). Consequence: `bundle-check` cannot catch web-only breakage. No task in this plan targets web, and `yarn web` is already non-functional on `main`.
+- `yarn bundle-check` cold-cache wall clock: **~15 s**. Cheap enough to run on every task without batching.
