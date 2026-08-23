@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Pressable, SafeAreaView, StatusBar, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { BackHandler, Pressable, SafeAreaView, StatusBar, Text, View } from "react-native";
 import { ADDRESSES, INITIAL_REQUESTS } from "./src/data";
 import { NotFound, Tab } from "./src/ui";
 import styles from "./src/styles";
@@ -59,6 +59,17 @@ export default function App() {
     back: () => setStack((s) => navcore.back(s)),
     root: (name, params) => setStack(navcore.root(name, params))
   };
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (stack.length > 1 && !NO_BACK.has(route.name)) {
+        nav.back();
+        return true;
+      }
+      return false; // dead-end routes and the root: let the OS have it
+    });
+    return () => sub.remove();
+  }, [stack, route.name]);
 
   const app = { requests, setRequests, profile, setProfile };
   const Screen = ROUTES[route.name] || NotFound;

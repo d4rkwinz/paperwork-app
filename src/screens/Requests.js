@@ -80,7 +80,12 @@ export function RequestDetailScreen({ nav, params, app }) {
           <SecondaryButton label="Cancel request" testID="cancel-request" onPress={() => setConfirmingCancel(true)} danger />
         </>
       )}
-      <Modal visible={confirmingCancel} animationType="fade" transparent>
+      <Modal
+        visible={confirmingCancel}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setConfirmingCancel(false)}
+      >
         <View style={styles.modalScrim}>
           <View style={styles.modalCard}>
             <Text style={styles.h2}>Cancel request?</Text>
