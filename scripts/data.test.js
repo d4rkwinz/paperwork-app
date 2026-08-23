@@ -1,7 +1,7 @@
 const assert = require("assert");
 const data = require("../src/data.js");
 
-const { SERVICES, DATES, TIMES, PRIORITIES, ADDRESSES, INITIAL_REQUESTS } = data;
+const { SERVICES, DATES, TIMES, PRIORITIES, ADDRESSES, INITIAL_REQUESTS, ROUTE_META } = data;
 
 assert.ok(Array.isArray(SERVICES) && SERVICES.length > 0, "SERVICES is a non-empty array");
 
@@ -30,3 +30,62 @@ for (const r of INITIAL_REQUESTS) {
 // Request ids must be unique - they are route params and testID suffixes.
 const reqIds = INITIAL_REQUESTS.map((r) => r.id);
 assert.strictEqual(new Set(reqIds).size, reqIds.length, "request ids are unique");
+
+// ROUTE_META is the ground-truth source Task 14's crawler-graph checker
+// builds from. Validate its shape here so a bad entry fails loudly at the
+// data layer instead of silently corrupting a later task's graph.
+assert.ok(Array.isArray(ROUTE_META) && ROUTE_META.length > 0, "ROUTE_META is a non-empty array");
+
+const REQUIRED_FIELDS = [
+  "name",
+  "tier",
+  "addressing",
+  "anchors",
+  "tab",
+  "instances",
+  "noBack",
+  "noTabs",
+  "terminal",
+  "trap",
+  "escape",
+  "edges"
+];
+
+for (const entry of ROUTE_META) {
+  for (const field of REQUIRED_FIELDS) {
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(entry, field),
+      `ROUTE_META entry "${entry.name}" is missing field "${field}"`
+    );
+  }
+  assert.ok(Array.isArray(entry.anchors), `ROUTE_META.${entry.name}.anchors must be an array`);
+  for (const anchor of entry.anchors) {
+    assert.ok(
+      typeof anchor === "string" && anchor.length > 0,
+      `ROUTE_META.${entry.name} has an anchor that is not a non-empty string: ${JSON.stringify(anchor)}`
+    );
+  }
+  assert.ok(Array.isArray(entry.edges), `ROUTE_META.${entry.name}.edges must be an array`);
+  if (entry.trap !== null) {
+    assert.ok(
+      typeof entry.escape === "string" && entry.escape.length > 0,
+      `ROUTE_META.${entry.name} has a trap but no non-empty escape - a trap with no documented correct answer measures nothing`
+    );
+  }
+}
+
+// Route names must be unique - they are the graph's node identifiers.
+const routeNames = ROUTE_META.map((entry) => entry.name);
+assert.strictEqual(new Set(routeNames).size, routeNames.length, "ROUTE_META names are unique");
+
+// Every edge must point at a real ROUTE_META entry - a dangling edge would
+// make the ground-truth graph unbuildable.
+const routeNameSet = new Set(routeNames);
+for (const entry of ROUTE_META) {
+  for (const edge of entry.edges) {
+    assert.ok(
+      routeNameSet.has(edge.to),
+      `ROUTE_META.${entry.name} has an edge to "${edge.to}", which is not a real ROUTE_META entry`
+    );
+  }
+}

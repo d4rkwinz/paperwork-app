@@ -18,8 +18,12 @@ import {
   RequestsScreen
 } from "./src/screens/Requests";
 import { AddressesScreen, PreferencesScreen, ProfileScreen } from "./src/screens/Profile";
+import { ForgotPasswordScreen, LoginScreen, OnboardingScreen } from "./src/screens/Auth";
 
 const ROUTES = {
+  Login: LoginScreen,
+  ForgotPassword: ForgotPasswordScreen,
+  Onboarding: OnboardingScreen,
   Home: HomeScreen,
   ServiceDetail: ServiceDetailScreen,
   BookingForm: BookingFormScreen,
@@ -34,11 +38,12 @@ const ROUTES = {
   Addresses: AddressesScreen
 };
 
-const NO_TABS = new Set();
-const NO_BACK = new Set();
+const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding"]);
+const NO_BACK = new Set(["Login"]);
 
 export default function App() {
-  const [stack, setStack] = useState(() => navcore.root("Home"));
+  const [stack, setStack] = useState(() => navcore.root("Login"));
+  const [session, setSession] = useState({ signedIn: false, guest: false });
   const [requests, setRequests] = useState(INITIAL_REQUESTS);
   const [profile, setProfile] = useState({
     name: "Alex Morgan",
@@ -71,7 +76,7 @@ export default function App() {
     return () => sub.remove();
   }, [stack, route.name]);
 
-  const app = { requests, setRequests, profile, setProfile };
+  const app = { requests, setRequests, profile, setProfile, session, setSession };
   const Screen = ROUTES[route.name] || NotFound;
 
   return (
