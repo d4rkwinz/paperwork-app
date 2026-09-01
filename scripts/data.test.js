@@ -31,11 +31,20 @@ for (const s of SERVICES) {
 const ids = SERVICES.map((s) => s.id);
 assert.strictEqual(new Set(ids).size, ids.length, "service ids are unique");
 
+// The three v1.0 seed requests (pinned byte-for-byte further down). Only
+// these may carry a literal date outside DATES - the escape exists solely
+// for REQ-0977's "Fri Apr 19"; every generated request must use a DATES
+// value, or Reschedule's date ChoiceRow can't represent it.
+const V1_REQUEST_IDS = new Set(["REQ-1042", "REQ-1038", "REQ-0977"]);
+
 // Every seeded request points at a real service and a real address.
 for (const r of INITIAL_REQUESTS) {
   assert.ok(ids.includes(r.serviceId), `request ${r.id} references a real service`);
   assert.ok(ADDRESSES.includes(r.address), `request ${r.id} uses a seeded address`);
-  assert.ok(DATES.includes(r.date) || /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d+$/.test(r.date), `request ${r.id} date is a choice or a literal date`);
+  assert.ok(
+    DATES.includes(r.date) || (V1_REQUEST_IDS.has(r.id) && /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d+$/.test(r.date)),
+    `request ${r.id} date ${JSON.stringify(r.date)} is not in DATES (only the v1.0 originals REQ-1042/REQ-1038/REQ-0977 may carry a literal date)`
+  );
   assert.ok(TIMES.includes(r.time), `request ${r.id} time is one of TIMES`);
   assert.ok(PRIORITIES.includes(r.priority), `request ${r.id} priority is one of PRIORITIES`);
   assert.ok(Array.isArray(r.timeline) && r.timeline.length > 0, `request ${r.id} has a timeline`);
@@ -554,11 +563,117 @@ for (const [name, cfg] of Object.entries(BULK)) {
 
 assert.strictEqual(data.SERVICES.length, 24, "24 services");
 
-// The 4 v1.0 services must survive verbatim - Flow 1 depends on service-plumbing
-// and GUIDELINES.md documents these testIDs.
-for (const id of ["cleaning", "plumbing", "groceries", "car"]) {
-  assert.ok(data.SERVICES.some((s) => s.id === id), `v1.0 service ${id} is preserved`);
+// The 7 v1.0 originals (4 services + 3 requests) must survive BYTE-IDENTICAL
+// to their v1.0 form, not merely be present by id - GUIDELINES.md's four
+// flows target service-plumbing / REQ-1042 / REQ-1038 / REQ-0977, and
+// external agent suites assert on their field values (a reviewer proved a
+// price change from "$120" to "$121" passed the old presence-only checks).
+// Snapshots below are extracted verbatim from `git show 1e81d25:App.js`
+// (the v1.0 tip on main), NOT hand-transcribed from src/data.js.
+const V1_SNAPSHOTS = {
+  service: {
+    cleaning: {
+      id: "cleaning",
+      title: "Home cleaning",
+      category: "Home",
+      short: "Kitchen, bath, floors, and reset tasks.",
+      details: "A two-person team handles common home cleaning tasks with supplies included.",
+      price: "$88",
+      eta: "2-3 hr",
+      accent: "#2F7D6D"
+    },
+    plumbing: {
+      id: "plumbing",
+      title: "Plumber",
+      category: "Repair",
+      short: "Leaks, clogs, fittings, and fixture checks.",
+      details: "A licensed technician can inspect urgent leaks, clogs, and fixture issues.",
+      price: "$120",
+      eta: "60-90 min",
+      accent: "#C55A3C"
+    },
+    groceries: {
+      id: "groceries",
+      title: "Grocery run",
+      category: "Errands",
+      short: "Fresh items, pantry basics, and delivery.",
+      details: "A shopper picks up your saved list and confirms substitutions before checkout.",
+      price: "$12 fee",
+      eta: "Same day",
+      accent: "#4D65A8"
+    },
+    car: {
+      id: "car",
+      title: "Car service",
+      category: "Auto",
+      short: "Pickup for inspection, wash, or oil change.",
+      details: "Schedule a vehicle pickup with status updates from pickup to dropoff.",
+      price: "$45 fee",
+      eta: "Half day",
+      accent: "#8B6F35"
+    }
+  },
+  request: {
+    "REQ-1042": {
+      id: "REQ-1042",
+      serviceId: "cleaning",
+      title: "Home cleaning",
+      status: "Active",
+      date: "Tomorrow",
+      time: "10:30 AM",
+      address: "Home - 24 Cedar Street",
+      priority: "Normal",
+      notes: "Focus on kitchen counters and guest bath.",
+      timeline: ["Booked", "Assigned", "En route"]
+    },
+    "REQ-1038": {
+      id: "REQ-1038",
+      serviceId: "groceries",
+      title: "Grocery run",
+      status: "Active",
+      date: "Today",
+      time: "4:30 PM",
+      address: "Home - 24 Cedar Street",
+      priority: "High",
+      notes: "Call before replacing coffee or oat milk.",
+      timeline: ["Booked", "Shopping"]
+    },
+    "REQ-0977": {
+      id: "REQ-0977",
+      serviceId: "car",
+      title: "Car service",
+      status: "Completed",
+      date: "Fri Apr 19",
+      time: "8:00 AM",
+      address: "Office - 9 Market Plaza",
+      priority: "Normal",
+      notes: "Oil change and tire pressure check.",
+      timeline: ["Booked", "Picked up", "Completed"]
+    }
+  }
+};
+
+// Per-field comparison over the UNION of expected and actual keys, so an
+// added, removed, or changed field all fail with a message naming the exact
+// entry and field - the reader needs to know whether they broke the v1.0
+// contract or intentionally changed seed data (which requires updating
+// GUIDELINES.md, the external agent suites, and this snapshot together).
+function assertV1Verbatim(kind, list, snapshots) {
+  for (const [id, expected] of Object.entries(snapshots)) {
+    const actual = list.find((item) => item.id === id);
+    assert.ok(actual, `v1.0 ${kind} ${id} is preserved`);
+    for (const field of new Set([...Object.keys(expected), ...Object.keys(actual)])) {
+      assert.deepStrictEqual(
+        actual[field],
+        expected[field],
+        `v1.0 ${kind} "${id}" field "${field}" drifted from its v1.0 value: expected ${JSON.stringify(expected[field])}, got ${JSON.stringify(actual[field])} - GUIDELINES.md flows and external agent suites depend on the 1e81d25 originals staying byte-identical`
+      );
+    }
+  }
 }
+
+assertV1Verbatim("service", data.SERVICES, V1_SNAPSHOTS.service);
+assertV1Verbatim("request", data.INITIAL_REQUESTS, V1_SNAPSHOTS.request);
 
 // Tier A instance counts that track SERVICES: one ServiceDetail instance per
 // service, one BookingForm instance per book-service push.
@@ -572,11 +687,6 @@ for (const name of ["ServiceDetail", "BookingForm"]) {
 }
 
 assert.strictEqual(data.INITIAL_REQUESTS.length, 40, "40 seeded requests");
-
-// The 3 v1.0 request ids must survive - Flows 2 and 3 target them by id.
-for (const id of ["REQ-1042", "REQ-1038", "REQ-0977"]) {
-  assert.ok(data.INITIAL_REQUESTS.some((r) => r.id === id), `v1.0 request ${id} is preserved`);
-}
 
 // Every status must be one the Requests filter can show, or a request becomes
 // unreachable and the expected graph overcounts.
