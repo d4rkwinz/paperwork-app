@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { INVOICES } from "../data";
-import { NotFound, PrimaryButton, ReviewBlock, ToggleRow } from "../ui";
+import { DOCS_PAGE_SIZE, DOCUMENTS, INVOICES } from "../data";
+import { NotFound, PrimaryButton, ReviewBlock, SecondaryButton, ToggleRow } from "../ui";
 import { cardValid } from "../validate";
 import styles from "../styles";
 
@@ -16,7 +16,6 @@ function amountText(amount) {
 // 4th tab root. Owns invoices and documents; tapping an invoice starts the
 // deepest chain in the app (Billing -> PaymentReview -> PaymentResult).
 export function BillingScreen({ nav, params, app }) {
-  const [showDocuments, setShowDocuments] = useState(false);
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={styles.kicker}>Billing</Text>
@@ -37,25 +36,16 @@ export function BillingScreen({ nav, params, app }) {
       <Pressable
         testID="open-documents"
         accessibilityRole="button"
-        accessibilityLabel="Show billing documents"
-        accessibilityState={{ expanded: showDocuments }}
-        onPress={() => setShowDocuments((current) => !current)}
+        accessibilityLabel="Open documents"
+        onPress={() => nav.push("Documents")}
         style={styles.settingRow}
       >
         <View>
           <Text style={styles.cardTitle}>Documents</Text>
           <Text style={styles.cardBody}>Statements and tax receipts</Text>
         </View>
-        <Text style={styles.chevron}>{showDocuments ? "v" : ">"}</Text>
+        <Text style={styles.chevron}>{">"}</Text>
       </Pressable>
-      {showDocuments ? (
-        <View testID="billing-documents" style={styles.inlinePanel}>
-          <Text style={styles.panelTitle}>April statement</Text>
-          <Text style={styles.bodyText}>12 invoices, 4 open.</Text>
-          <Text style={styles.panelTitle}>2025 tax receipt</Text>
-          <Text style={styles.bodyText}>Issued Jan 15 for deductible services.</Text>
-        </View>
-      ) : null}
       <Text style={styles.sectionTitle}>Invoices</Text>
       {INVOICES.map((invoice) => (
         <Pressable
@@ -241,6 +231,82 @@ export function PaymentResultScreen({ nav, params, app }) {
       ) : (
         <PrimaryButton label="Back to billing" testID="payment-done" onPress={() => nav.root("Billing")} />
       )}
+    </ScrollView>
+  );
+}
+
+// Trap: load-more growth. The route stays the same while docs-load-more
+// appends the next DOCS_PAGE_SIZE rows in place; the button unmounts once all
+// 60 are shown (after exactly 5 taps), which is what makes the trap bounded.
+// docs-count is the anchor: it renders unconditionally in every page state.
+// Bounded at 60 items, so this stays a ScrollView + .map - no FlatList.
+export function DocumentsScreen({ nav, params, app }) {
+  const [page, setPage] = useState(1);
+  const shown = DOCUMENTS.slice(0, page * DOCS_PAGE_SIZE);
+  const exhausted = shown.length >= DOCUMENTS.length;
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Text style={styles.kicker}>Billing</Text>
+      <Text style={styles.h1}>Documents</Text>
+      <Text
+        testID="docs-count"
+        accessibilityLabel={`Showing ${shown.length} of ${DOCUMENTS.length} documents`}
+        style={styles.bodyText}
+      >
+        {`${shown.length} of ${DOCUMENTS.length}`}
+      </Text>
+      {shown.map((doc) => (
+        <Pressable
+          key={doc.id}
+          testID={`doc-${doc.id}`}
+          accessibilityRole="button"
+          accessibilityLabel={`Open document ${doc.title}`}
+          onPress={() => nav.push("DocumentDetail", { docId: doc.id })}
+          style={styles.requestCard}
+        >
+          <View>
+            <Text style={styles.cardEyebrow}>{doc.id}</Text>
+            <Text style={styles.cardTitle}>{doc.title}</Text>
+            <Text style={styles.cardBody}>{`${doc.kind} - ${doc.sizeKb} KB`}</Text>
+          </View>
+          <Text style={styles.chevron}>{">"}</Text>
+        </Pressable>
+      ))}
+      {exhausted ? null : (
+        <PrimaryButton
+          label="Load more"
+          testID="docs-load-more"
+          onPress={() => setPage((current) => current + 1)}
+        />
+      )}
+    </ScrollView>
+  );
+}
+
+// Trap: param explosion. One route, 60 param instances via params.docId -
+// the correct crawler model is 1 route / 60 instances, not 60 routes.
+export function DocumentDetailScreen({ nav, params, app }) {
+  const doc = DOCUMENTS.find((item) => item.id === params.docId);
+
+  if (!doc) {
+    return <NotFound label="Document" nav={nav} />;
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Text style={styles.kicker}>Document</Text>
+      <Text testID="doc-detail-title" accessibilityLabel={`Document ${doc.title}`} style={styles.h1}>
+        {doc.title}
+      </Text>
+      <ReviewBlock
+        rows={[
+          ["Reference", doc.id],
+          ["Kind", doc.kind],
+          ["Year", String(doc.year)],
+          ["Size", `${doc.sizeKb} KB`]
+        ]}
+      />
+      <SecondaryButton label="Back to documents" testID="doc-detail-back" onPress={() => nav.back()} />
     </ScrollView>
   );
 }

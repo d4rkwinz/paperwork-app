@@ -28,6 +28,8 @@ import {
 import {
   AddCardScreen,
   BillingScreen,
+  DocumentDetailScreen,
+  DocumentsScreen,
   PaymentMethodsScreen,
   PaymentResultScreen,
   PaymentReviewScreen
@@ -57,7 +59,9 @@ const ROUTES = {
   PaymentMethods: PaymentMethodsScreen,
   AddCard: AddCardScreen,
   PaymentReview: PaymentReviewScreen,
-  PaymentResult: PaymentResultScreen
+  PaymentResult: PaymentResultScreen,
+  Documents: DocumentsScreen,
+  DocumentDetail: DocumentDetailScreen
 };
 
 const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding", "LegalTerms"]);

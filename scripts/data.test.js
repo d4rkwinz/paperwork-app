@@ -247,3 +247,24 @@ for (const filePath of screenFilePaths) {
     );
   }
 }
+
+const { DOCUMENTS, DOCS_PAGE_SIZE, INVOICES } = data;
+
+assert.strictEqual(DOCUMENTS.length, 60, "DOCUMENTS is exactly 60 items");
+const docIds = DOCUMENTS.map((d) => d.id);
+assert.strictEqual(new Set(docIds).size, 60, "document ids are unique");
+for (const d of DOCUMENTS) {
+  assert.ok(d.title, `document ${d.id} has a title`);
+  assert.strictEqual(typeof d.sizeKb, "number", `document ${d.id} sizeKb is numeric`);
+}
+
+// The load-more generator must be provably bounded: a finite number of taps
+// exhausts it. This is what lets a run-to-exhaustion crawler terminate.
+assert.ok(DOCS_PAGE_SIZE > 0, "page size is positive");
+const pages = Math.ceil(DOCUMENTS.length / DOCS_PAGE_SIZE);
+assert.ok(Number.isFinite(pages) && pages <= 10, `load-more terminates in ${pages} taps`);
+
+// At least one invoice with a zero amount and one with an empty status, to keep
+// the falsy-and regression covered by seed data rather than by memory.
+assert.ok(INVOICES.some((i) => i.amount === 0), "an invoice with amount 0 exists");
+assert.ok(INVOICES.some((i) => i.status === ""), "an invoice with an empty status exists");
