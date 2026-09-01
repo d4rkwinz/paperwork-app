@@ -289,9 +289,26 @@ assert.ok(INVOICES.some((i) => i.status === ""), "an invoice with an empty statu
 // ---------------------------------------------------------------------------
 // BULK sanity (Task 12). BULK configs are executed blind by the generic
 // renderers: a typo'd `collection` is an immediate `undefined.map` TypeError
-// at runtime, a bad route name lands on NotFound, and a form/wizard exiting
-// to a param-requiring route with no nextParams renders NotFound too. Catch
-// all of that here, at the data layer.
+// at runtime, and a push whose params don't resolve in the target's
+// collection lands on NotFound. What this pass covers:
+//   - shape/keys per kind, collection existence, unique ids, testPrefixes
+//   - EVERY push shape generic.js can produce resolves: list rows
+//     (itemRoute + { [itemParam]: item.id }), detail actions
+//     ({ [cfg.param]: id, ...action.params }), deep links (linkField /
+//     deepLinkField), and form/wizard exits (nextRoute + nextParams)
+//   - Tier B edge parity in BOTH directions: derived nav targets ==
+//     declared ROUTE_META edges (modulo the gated NotFound -> Home edge)
+//   - detail instances counts equal their collection's length
+// What it still CANNOT catch:
+//   - Tier A screens' own hardcoded pushes (outside BULK; the literal nav
+//     scan above checks their edge names but not their params)
+//   - params pushed into a Tier A route missing from
+//     TIER_A_PARAM_COLLECTIONS (assertParamsResolve fails loudly instead
+//     of guessing, but only when data actually carries such a push)
+//   - instances for param-aliased routes (e.g. NotificationSettings 25,
+//     RecurrencePicker 45) and wizard step counts - still hand-derived
+//   - edge FLAGS (requiresInput/gated/cycle) and anything about runtime
+//     state, conditional rendering, or filter behavior
 
 const KIND_KEYS = {
   list: ["title", "heading", "collection", "itemLabel", "testPrefix"],
@@ -306,13 +323,14 @@ const KIND_KEYS = {
 const TIER_A_PARAM_COLLECTIONS = {
   RequestDetail: ["requestId", INITIAL_REQUESTS],
   PaymentReview: ["invoiceId", INVOICES],
-  DocumentDetail: ["docId", DOCUMENTS]
+  DocumentDetail: ["docId", DOCUMENTS],
+  ServiceDetail: ["serviceId", SERVICES]
 };
 
 // Assert that pushing `route` with `params` lands on a found state, not
-// NotFound - for every navigation whose params are DATA (deep links,
-// Security's link rows, form/wizard nextParams), where a stale id would
-// otherwise fail silently at runtime.
+// NotFound - for every navigation whose params are DATA (list rows, detail
+// actions, deep links, Security's link rows, form/wizard nextParams), where
+// a stale id would otherwise fail silently at runtime.
 function assertParamsResolve(route, params, context) {
   const target = BULK[route];
   if (target && target.kind === "detail") {
@@ -327,6 +345,8 @@ function assertParamsResolve(route, params, context) {
       Number.isInteger(step) && step >= 1 && step <= target.steps.length,
       `${context} pushes wizard ${route} with step=${JSON.stringify(step)} (valid: integer 1..${target.steps.length}) - it would render NotFound`
     );
+  } else if (target) {
+    // BULK lists and forms ignore params (param aliasing is by design).
   } else if (TIER_A_PARAM_COLLECTIONS[route]) {
     const [param, collection] = TIER_A_PARAM_COLLECTIONS[route];
     const id = params ? params[param] : undefined;
@@ -334,8 +354,14 @@ function assertParamsResolve(route, params, context) {
       collection.some((item) => item.id === id),
       `${context} pushes ${route} with ${param}=${JSON.stringify(id)}, which is not a seeded id - it would render NotFound`
     );
+  } else {
+    // A Tier A route this test cannot classify: rather than silently
+    // accepting params we cannot verify, fail loudly and force a decision.
+    assert.ok(
+      !params || Object.keys(params).length === 0,
+      `${context} pushes ${route} with params ${JSON.stringify(params)}, but this test does not know how ${route} consumes params - add it to TIER_A_PARAM_COLLECTIONS if it dereferences an id, or drop the params if it ignores them`
+    );
   }
-  // Lists, forms, and param-free Tier A routes accept any params.
 }
 
 const bulkNames = Object.keys(BULK);
@@ -408,6 +434,13 @@ for (const [name, cfg] of Object.entries(BULK)) {
     } else {
       assert.ok(cfg.itemRoute && cfg.itemParam, `BULK.${name} is a list with neither linkField nor itemRoute+itemParam - its rows have nowhere to go`);
       navTargets.push(cfg.itemRoute);
+      // Every row pushes itemRoute with { [itemParam]: item.id } - the same
+      // shape ListScreen produces. Each of those pushes must resolve, or a
+      // whole list's rows dead-end on NotFound (e.g. a list whose collection
+      // is not the one its detail route reads).
+      for (const item of data[cfg.collection]) {
+        assertParamsResolve(cfg.itemRoute, { [cfg.itemParam]: item.id }, `BULK.${name} row ${item.id}`);
+      }
     }
   }
 
@@ -423,10 +456,28 @@ for (const [name, cfg] of Object.entries(BULK)) {
         assert.ok(item[row[1]] !== undefined, `BULK.${name} row field "${row[1]}" is missing on item ${item.id}`);
       }
     }
+    // instances is hand-written in ROUTE_META, but for a detail route it is
+    // by definition one per collection item - pin the two together.
+    assert.strictEqual(
+      meta.instances,
+      collection.length,
+      `ROUTE_META.${name}.instances is ${meta.instances}, but its collection ${cfg.collection} has ${collection.length} items - a detail route has exactly one instance per item`
+    );
     const actions = cfg.actions ? cfg.actions : [];
     for (const action of actions) {
       assert.ok(action.label && action.route, `BULK.${name} has an action missing label or route`);
       navTargets.push(action.route);
+      // Every action pushes { [cfg.param]: id, ...action.params } - the same
+      // shape DetailScreen produces - for each of this detail's instances.
+      // This is what requires wizard targets to carry step: 1 in
+      // action.params, and detail targets to share resolvable ids.
+      for (const item of collection) {
+        assertParamsResolve(
+          action.route,
+          { [cfg.param]: item.id, ...action.params },
+          `BULK.${name} action "${action.label}" (from item ${item.id})`
+        );
+      }
     }
     // A detail with no actions emits ZERO testIDs; its ROUTE_META anchors
     // are already checked against the derived (empty) set above.
@@ -471,6 +522,29 @@ for (const [name, cfg] of Object.entries(BULK)) {
     assert.ok(
       declaredEdges.has(target),
       `BULK.${name} can navigate to "${target}", but ROUTE_META.${name} declares no edge to it - the ground-truth graph would be missing a real edge`
+    );
+  }
+
+  // Reverse edge parity (Tier B only): every DECLARED edge must be a target
+  // some BULK control can actually produce - a phantom edge would put an
+  // untraversable edge in the ground-truth graph and penalize any crawler
+  // that (correctly) never finds it. The one legitimate exception is the
+  // gated NotFound -> Home edge on routes that can render the NotFound
+  // guard: details (params miss) and wizards (bad step). Lists and forms
+  // never render NotFound, so they may not declare it either.
+  const derivedTargets = new Set(navTargets);
+  const canNotFound = cfg.kind === "detail" || cfg.kind === "wizard";
+  for (const edge of meta.edges) {
+    if (edge.to === "Home" && edge.gated && canNotFound) continue;
+    assert.ok(
+      derivedTargets.has(edge.to),
+      `ROUTE_META.${name} declares an edge to "${edge.to}", but no BULK.${name} control (row, action, deep link, or exit) can produce that navigation - phantom edge in the ground-truth graph`
+    );
+  }
+  if (canNotFound) {
+    assert.ok(
+      meta.edges.some((edge) => edge.to === "Home" && edge.gated),
+      `ROUTE_META.${name} is a ${cfg.kind} (renders NotFound on a bad param) but declares no gated Home edge for notfound-home`
     );
   }
 }
