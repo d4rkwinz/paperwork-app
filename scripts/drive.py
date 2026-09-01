@@ -242,6 +242,9 @@ elif steps == "flow3":
     ok &= tap("Cancel request")
     ok &= tap("Yes, cancel")
     ok &= tap("Go back")
+    # Task 9 moved the filter into a bottom sheet: one extra tap to open it.
+    # The opener's label carries the current filter, so match on the prefix.
+    ok &= tap("Filter requests, currently", exact=False)
     ok &= tap("Canceled")
     shot("07-flow3-canceled")
     xml = dump()
