@@ -721,6 +721,41 @@ const ROUTE_META = [
   }
 ];
 
+// BULK: the Tier B route registry - one entry per generic route, keyed by
+// route name. Consumed by src/screens/generic.js's four renderers (Task 11);
+// populated by Task 12; read by Task 13's graph derivation. Tier B is
+// deliberately sparsely addressed: a route's ONLY testIDs are
+// `${testPrefix}-primary` (primary action button) and `${testPrefix}-list`
+// (list container). Everything else is reachable only via text / the
+// accessibility tree. Items in every referenced collection must be keyed by
+// an `id` field (the convention every existing collection already follows).
+//
+// Shapes by kind (this is the contract - Task 12 entries must conform):
+//   list:   { kind: "list", title, heading, collection, itemLabel(item),
+//             itemSub(item)?, itemRoute, itemParam, testPrefix }
+//           Rows push itemRoute with { [itemParam]: item.id }; the
+//           ScrollView carries `${testPrefix}-list`. No primary button.
+//   detail: { kind: "detail", title?, collection, param, label, titleField,
+//             rows: [[rowLabel, itemField], ...],
+//             actions?: [{ label, route, params? }], testPrefix }
+//           Looks up params[param] === item.id; renders NotFound(label) on
+//           a miss. actions[0] is the PrimaryButton `${testPrefix}-primary`;
+//           later actions are SecondaryButtons with no testID. Every action
+//           pushes its route with { [param]: id, ...action.params }.
+//   form:   { kind: "form", title, heading, fields: [{ key, label,
+//             placeholder?, multiline?, required? }], submitLabel,
+//             nextRoute, testPrefix }
+//           Submit (`${testPrefix}-primary`) stays disabled until every
+//           required field is non-blank, then pushes nextRoute.
+//   wizard: { kind: "wizard", title, label, route, steps: [{ heading,
+//             fields }], submitLabel, nextRoute, testPrefix }
+//           `route` is the wizard's own route name. Renders
+//           steps[params.step - 1]; NotFound(label) when params.step is
+//           missing, non-numeric, or out of range - entry edges must pass
+//           { step: 1 }. Next (`${testPrefix}-primary`) pushes route with
+//           { step: step + 1 } until the last step, which pushes nextRoute.
+const BULK = {};
+
 module.exports = {
   SERVICES,
   DATES,
@@ -737,5 +772,6 @@ module.exports = {
   PAYMENT_METHODS,
   ANDROID_NAV_BAR_GAP_ANDROID,
   TAB_BAR_HEIGHT,
-  ROUTE_META
+  ROUTE_META,
+  BULK
 };
