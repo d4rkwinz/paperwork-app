@@ -1,0 +1,1651 @@
+{
+  "version": "1.1.0",
+  "keying": "One instance per distinct (route, params) pair a real in-app control produces - NOT per distinct rendered state. Some routes ignore an inherited param and render identically for every value (e.g. NotificationSettings x25, RecurrencePicker x45, MessageThread x30); a crawler that dedupes by rendered state will legitimately report ~110 fewer instances and must not be scored short for it.",
+  "nodes": [
+    {
+      "name": "Login",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "login-submit"
+      ],
+      "tab": null,
+      "instances": 1,
+      "noBack": true,
+      "noTabs": true,
+      "terminal": false,
+      "trap": "Gate: crawler must type into two fields to progress",
+      "escape": "Type both fields and submit, or tap login-guest"
+    },
+    {
+      "name": "ForgotPassword",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "forgot-back"
+      ],
+      "tab": null,
+      "instances": 1,
+      "noBack": false,
+      "noTabs": true,
+      "terminal": false,
+      "trap": "Off-path branch; 2 states on 1 route",
+      "escape": "Reachable from login-forgot; forgot-back returns to Login"
+    },
+    {
+      "name": "Onboarding",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "onboarding-next"
+      ],
+      "tab": null,
+      "instances": 3,
+      "noBack": false,
+      "noTabs": true,
+      "terminal": false,
+      "trap": "State aliasing - 3 near-identical states on one route",
+      "escape": "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut"
+    },
+    {
+      "name": "Home",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "service-cleaning"
+      ],
+      "tab": "Home",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "ServiceDetail",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "book-service"
+      ],
+      "tab": "Home",
+      "instances": 24,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "BookingForm",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "review-booking"
+      ],
+      "tab": "Home",
+      "instances": 24,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "BookingReview",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "submit-booking"
+      ],
+      "tab": "Home",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "BookingConfirmation",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "view-created-request"
+      ],
+      "tab": "Home",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Requests",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "open-filter-sheet"
+      ],
+      "tab": "Requests",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Overlay state that is not a route - the filter lives in a bottom-sheet Modal, so request-filter-* options exist only while the sheet is open, and opening/closing it changes screen state, never the route",
+      "escape": "Tap open-filter-sheet, then tap a request-filter-{value} option (applies the filter and closes the sheet); close-filter-sheet or Android hardware back dismisses without changing the filter"
+    },
+    {
+      "name": "RequestDetail",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "request-detail"
+      ],
+      "tab": "Requests",
+      "instances": 40,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Reschedule",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "reschedule-submit"
+      ],
+      "tab": "Requests",
+      "instances": 15,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Precondition-gated edge - reschedule-request renders on RequestDetail only while request.status is Active, so this route is invisible from Completed/Canceled requests",
+      "escape": "Enter from an Active request (e.g. REQ-1042 or REQ-1038); Completed REQ-0977 legitimately has no reschedule-request control - the missing edge is correct, not a crawler gap"
+    },
+    {
+      "name": "EditRequest",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "review-request-changes"
+      ],
+      "tab": "Requests",
+      "instances": 15,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "EditRequestReview",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "save-request-changes"
+      ],
+      "tab": "Requests",
+      "instances": 15,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Profile",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "open-addresses"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Preferences",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "toggle-push"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Addresses",
+      "tier": "v1",
+      "addressing": "exhaustive",
+      "anchors": [
+        "select-address-home-24-cedar-street"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": true,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Search",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "search-input"
+      ],
+      "tab": "Home",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Requires generated input - results render only when the trimmed query is >= 2 chars, so a crawler that never types sees 0 new edges",
+      "escape": "Type at least 2 characters into search-input (e.g. \"pl\" matches Plumber); a single character still shows search-empty; tap a search-result-{serviceId} row to reach ServiceDetail"
+    },
+    {
+      "name": "Activity",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "activity-seg-all"
+      ],
+      "tab": "Home",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": true,
+      "trap": "In-screen state vs navigation - three segments swap the list content while the route never changes",
+      "escape": "Tap activity-seg-all, activity-seg-alerts, activity-seg-receipts and record 3 states for 1 route - not 3 routes, and not 1 state"
+    },
+    {
+      "name": "SupportChat",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "support-title"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": true,
+      "trap": "Slow load - support-loading renders for 1500ms after every mount (screens remount per push, so the delay replays on every visit) before support-message-{n} and support-reply appear",
+      "escape": "Poll until support-loading is gone before snapshotting - settled content appears ~1.5s after entry"
+    },
+    {
+      "name": "LegalTerms",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "legal-close"
+      ],
+      "tab": null,
+      "instances": 1,
+      "noBack": true,
+      "noTabs": true,
+      "terminal": false,
+      "trap": "Dead end - no top back button and no tab bar; Android hardware back backgrounds the app instead of navigating",
+      "escape": "Find and tap the in-content legal-close (calls nav.back) - it is the only exit"
+    },
+    {
+      "name": "Billing",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "open-payment-methods"
+      ],
+      "tab": "Billing",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "4th tab root - starts the app's deepest chain (Billing -> PaymentMethods -> AddCard and Billing -> PaymentReview -> PaymentResult); seeded INV-2405 has amount: 0 and INV-2408 has status: '' to exercise falsy-and rendering",
+      "escape": "Reachable from tab-billing in the tab bar; tap any billing-invoice-{id} row to reach PaymentReview, or open-payment-methods to go deeper via cards"
+    },
+    {
+      "name": "PaymentMethods",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "add-card"
+      ],
+      "tab": "Billing",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Depth - second level of the billing chain; add-card is the only edge deeper",
+      "escape": "Reached via open-payment-methods on Billing; tap add-card to reach AddCard, nav-back returns to Billing"
+    },
+    {
+      "name": "AddCard",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "card-submit"
+      ],
+      "tab": "Billing",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Format validation - card-submit stays disabled until src/validate.js cardValid passes on all four fields; non-empty garbage does not enable it",
+      "escape": "Type 16 digits into card-number (spaces/dashes allowed), MM/YY with month 01-12 into card-expiry, exactly 3 digits into card-cvv, and any non-blank card-name; card-submit then enables and returns to PaymentMethods"
+    },
+    {
+      "name": "PaymentReview",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "payment-pay"
+      ],
+      "tab": "Billing",
+      "instances": 12,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Branch point - the simulate-decline Switch decides which of PaymentResult's two terminal states payment-pay produces",
+      "escape": "simulate-decline is reachable before paying; leave it off and tap payment-pay for success, flip it on and pay again for the declined state"
+    },
+    {
+      "name": "PaymentResult",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "payment-result"
+      ],
+      "tab": "Billing",
+      "instances": 24,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Two terminal states on one route - success renders payment-success + payment-done, declined renders payment-declined + payment-retry; only payment-result is present in both",
+      "escape": "Reach both states by flipping simulate-decline on PaymentReview; payment-retry replaces back to PaymentReview, payment-done returns to the Billing root"
+    },
+    {
+      "name": "Documents",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "docs-count"
+      ],
+      "tab": "Billing",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Load-more growth - docs-load-more appends the next 10 of 60 docs in place, so the same route gains new doc-{id} rows after each tap; the crawler must re-enqueue the changed screen and still terminate",
+      "escape": "Tap docs-load-more repeatedly; it disappears after exactly 5 taps (6 pages, docs-count reads '60 of 60'), so the growth is bounded and exhaustion terminates"
+    },
+    {
+      "name": "DocumentDetail",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "doc-detail-title"
+      ],
+      "tab": "Billing",
+      "instances": 60,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Param explosion - one route reachable with 60 distinct docId params; the correct model is 1 route with 60 instances, not 60 routes and not 1 state",
+      "escape": "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents"
+    },
+    {
+      "name": "HelpCenter",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "help-contact"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Alias A - renders byte-identical output (heading, body, HELP_TOPICS list, testIDs) to SupportFaq from the same shared component; only the route name and entry point differ",
+      "escape": "Record 2 distinct nodes keyed by route, not by rendered content - a crawler that dedups on screen hash merges this with SupportFaq and reports 1 where the truth is 2"
+    },
+    {
+      "name": "SupportFaq",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "help-contact"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Alias B - byte-identical rendered output and testIDs to HelpCenter; reached from Preferences (open-faq) instead of Profile (open-help)",
+      "escape": "Record 2 distinct nodes keyed by route, not by rendered content - identical appearance, distinct route"
+    },
+    {
+      "name": "Referral",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "referral-code"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Cycle - referral-open-profile pushes Profile, and Profile's open-referral pushes Referral, so the stack can grow Referral -> Profile -> Referral forever",
+      "escape": "Detect the loop by route identity and stop re-expanding visited routes; do not recurse indefinitely"
+    },
+    {
+      "name": "DangerZone",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "danger-warning"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Destructive path entry - open-delete-account leads one hop deeper to the typed-confirmation reset",
+      "escape": "The screen itself is safe; the destructive action lives on DeleteAccount and requires typing the exact literal DELETE"
+    },
+    {
+      "name": "DeleteAccount",
+      "tier": "A",
+      "addressing": "exhaustive",
+      "anchors": [
+        "delete-submit"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Self-destruction - delete-submit resets requests, profile, paymentMethods, and session to seed and roots the stack at Login; it stays disabled until confirmsDelete passes on the exact literal DELETE (trimmed, case-sensitive - lowercase delete does not enable it)",
+      "escape": "Recover after the reset: the app lands on Login with seed data restored; any stale param id pushed afterwards must hit the NotFound guards, not a crash"
+    },
+    {
+      "name": "Inbox",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "inbox-list"
+      ],
+      "tab": "Home",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "NotificationDetail",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "notification-detail-primary"
+      ],
+      "tab": "Home",
+      "instances": 25,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Conditional cross-cluster deep link - the accessibilityLabel-only 'Open linked item' button renders on just 8 of 25 instances (the NOTIFICATION_LINKS indices), fanning out into the requests, billing, insurance, and documents clusters",
+      "escape": "Enumerate all 25 notificationId instances from inbox rows; on the 8 linked ones, find 'Open linked item' via the accessibility tree (it has no testID) - it pushes the linked route with that notification's deepLink params"
+    },
+    {
+      "name": "NotificationSettings",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "notification-settings-primary"
+      ],
+      "tab": "Home",
+      "instances": 25,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Param aliasing - entered from 25 NotificationDetail instances, each push carrying that notification's notificationId, which this form ignores; all 25 instances render identical content",
+      "escape": "Model 25 instances but recognize the rendered state is param-independent; fill the required 'Daily summary time' field to enable notification-settings-primary, which returns to Inbox"
+    },
+    {
+      "name": "Policies",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "policies-list"
+      ],
+      "tab": "Billing",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "PolicyDetail",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "policy-detail-primary"
+      ],
+      "tab": "Billing",
+      "instances": 6,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "ClaimStart",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "claim-start-primary"
+      ],
+      "tab": "Billing",
+      "instances": 6,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "ClaimWizard",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "claim-wizard-primary"
+      ],
+      "tab": "Billing",
+      "instances": 8,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Wizard step params - renders steps[params.step - 1] and NotFound on a missing, non-numeric, or out-of-range step, so entry MUST pass step: 1; the Next button re-pushes this same route with step + 1 (a self-edge, not a new route)",
+      "escape": "Enter via claim-start-primary (pushes step: 1); tap claim-wizard-primary through steps 2 and 3; the step-3 press lands on ClaimSubmitted with the static seeded claimId CLM-01"
+    },
+    {
+      "name": "ClaimSubmitted",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "claim-submitted-primary"
+      ],
+      "tab": "Billing",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Directory",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "directory-list"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "ProviderDetail",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "provider-detail-primary"
+      ],
+      "tab": "Profile",
+      "instances": 30,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "MessageThread",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "message-thread-list"
+      ],
+      "tab": "Profile",
+      "instances": 30,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Param aliasing - entered from 30 ProviderDetail instances, each push carrying providerId, which this shared thread ignores; all 30 instances render the same 6 seeded messages",
+      "escape": "Model 30 instances but recognize the rendered state is param-independent; tapping any message row (accessibilityLabel only) opens the reply composer"
+    },
+    {
+      "name": "ComposeMessage",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "compose-message-primary"
+      ],
+      "tab": "Profile",
+      "instances": 6,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "RemindersMonth",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "reminders-month-list"
+      ],
+      "tab": "Requests",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "RemindersDay",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "reminders-day-list"
+      ],
+      "tab": "Requests",
+      "instances": 9,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Per-instance filtered content - the same route renders a different 5-reminder subset per dayId; an unknown or missing dayId falls back to all 45 so the anchor list renders in every state",
+      "escape": "Visit all 9 dayId instances from RemindersMonth rows to see all 45 reminders; do not merge the instances just because the route name repeats"
+    },
+    {
+      "name": "ReminderDetail",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "reminder-detail-primary"
+      ],
+      "tab": "Requests",
+      "instances": 45,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "RecurrencePicker",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "recurrence-picker-list"
+      ],
+      "tab": "Requests",
+      "instances": 45,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Param aliasing - entered from 45 ReminderDetail instances, each push carrying reminderId, which this picker ignores; all 45 instances render the same 4 recurrence options",
+      "escape": "Model 45 instances but recognize the rendered state is param-independent; tapping a recurrence row (accessibilityLabel only) opens the creation form"
+    },
+    {
+      "name": "CreateReminder",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "create-reminder-primary"
+      ],
+      "tab": "Requests",
+      "instances": 4,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "Security",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "security-list"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Hub list - unlike every other Tier B list, each row navigates to a DIFFERENT route via its item.link (linkField shape), and the TwoFactorSetup row must pass { step: 1 } or the wizard renders NotFound",
+      "escape": "Tap each of the 3 rows (accessibilityLabel only) to fan out to ChangePassword, TwoFactorSetup (step 1), and DataExport (EXP-01)"
+    },
+    {
+      "name": "ChangePassword",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "change-password-primary"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "TwoFactorSetup",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "twofactor-setup-primary"
+      ],
+      "tab": "Profile",
+      "instances": 2,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": "Wizard step params - renders steps[params.step - 1] and NotFound on a bad step, so entry MUST pass step: 1; the Next button re-pushes this same route with step: 2 (a self-edge)",
+      "escape": "Enter from Security's two-factor row (pushes step: 1); tap twofactor-setup-primary twice - the step-2 press returns to Security"
+    },
+    {
+      "name": "DataExport",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "data-export-primary"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    },
+    {
+      "name": "ExportStatus",
+      "tier": "B",
+      "addressing": "sparse",
+      "anchors": [
+        "export-status-primary"
+      ],
+      "tab": "Profile",
+      "instances": 1,
+      "noBack": false,
+      "noTabs": false,
+      "terminal": false,
+      "trap": null,
+      "escape": null
+    }
+  ],
+  "edges": [
+    {
+      "from": "Login",
+      "to": "Onboarding",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Login",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Login",
+      "to": "ForgotPassword",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ForgotPassword",
+      "to": "Login",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Onboarding",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Home",
+      "to": "ServiceDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Home",
+      "to": "Search",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Home",
+      "to": "Activity",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Home",
+      "to": "Inbox",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ServiceDetail",
+      "to": "BookingForm",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ServiceDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "BookingForm",
+      "to": "BookingReview",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "BookingForm",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "BookingReview",
+      "to": "BookingConfirmation",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "BookingReview",
+      "to": "BookingForm",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "BookingConfirmation",
+      "to": "RequestDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "BookingConfirmation",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Requests",
+      "to": "RequestDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Requests",
+      "to": "RemindersMonth",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "RequestDetail",
+      "to": "EditRequest",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "RequestDetail",
+      "to": "Reschedule",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "RequestDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "Reschedule",
+      "to": "RequestDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Reschedule",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "EditRequest",
+      "to": "EditRequestReview",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "EditRequest",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "EditRequestReview",
+      "to": "RequestDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "EditRequestReview",
+      "to": "EditRequest",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Profile",
+      "to": "Addresses",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Profile",
+      "to": "Preferences",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Profile",
+      "to": "SupportChat",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Profile",
+      "to": "HelpCenter",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Profile",
+      "to": "Referral",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Profile",
+      "to": "DangerZone",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Profile",
+      "to": "Directory",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Profile",
+      "to": "Security",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Preferences",
+      "to": "LegalTerms",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Preferences",
+      "to": "SupportFaq",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Search",
+      "to": "ServiceDetail",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "LegalTerms",
+      "to": "Preferences",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Billing",
+      "to": "PaymentReview",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Billing",
+      "to": "PaymentMethods",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Billing",
+      "to": "Documents",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Billing",
+      "to": "Policies",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "PaymentMethods",
+      "to": "AddCard",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "AddCard",
+      "to": "PaymentMethods",
+      "requiresInput": true,
+      "gated": true,
+      "cycle": true
+    },
+    {
+      "from": "PaymentReview",
+      "to": "PaymentResult",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "PaymentReview",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "PaymentResult",
+      "to": "PaymentReview",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "PaymentResult",
+      "to": "Billing",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Documents",
+      "to": "DocumentDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "DocumentDetail",
+      "to": "Documents",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "DocumentDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "HelpCenter",
+      "to": "SupportChat",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "SupportFaq",
+      "to": "SupportChat",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Referral",
+      "to": "Profile",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "DangerZone",
+      "to": "DeleteAccount",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "DeleteAccount",
+      "to": "Login",
+      "requiresInput": true,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "Inbox",
+      "to": "NotificationDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "NotificationDetail",
+      "to": "NotificationSettings",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "NotificationDetail",
+      "to": "RequestDetail",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "NotificationDetail",
+      "to": "PaymentReview",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "NotificationDetail",
+      "to": "PolicyDetail",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "NotificationDetail",
+      "to": "DocumentDetail",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "NotificationDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "NotificationSettings",
+      "to": "Inbox",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Policies",
+      "to": "PolicyDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "PolicyDetail",
+      "to": "ClaimStart",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "PolicyDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "ClaimStart",
+      "to": "ClaimWizard",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ClaimStart",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "ClaimWizard",
+      "to": "ClaimWizard",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "ClaimWizard",
+      "to": "ClaimSubmitted",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ClaimWizard",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "ClaimSubmitted",
+      "to": "Policies",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "ClaimSubmitted",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "Directory",
+      "to": "ProviderDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ProviderDetail",
+      "to": "MessageThread",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ProviderDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "MessageThread",
+      "to": "ComposeMessage",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ComposeMessage",
+      "to": "MessageThread",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "RemindersMonth",
+      "to": "RemindersDay",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "RemindersDay",
+      "to": "ReminderDetail",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ReminderDetail",
+      "to": "RecurrencePicker",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ReminderDetail",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "RecurrencePicker",
+      "to": "CreateReminder",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "CreateReminder",
+      "to": "RemindersMonth",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "Security",
+      "to": "ChangePassword",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Security",
+      "to": "TwoFactorSetup",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "Security",
+      "to": "DataExport",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "ChangePassword",
+      "to": "Security",
+      "requiresInput": true,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "TwoFactorSetup",
+      "to": "TwoFactorSetup",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "TwoFactorSetup",
+      "to": "Security",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "TwoFactorSetup",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "DataExport",
+      "to": "ExportStatus",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": false
+    },
+    {
+      "from": "DataExport",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    },
+    {
+      "from": "ExportStatus",
+      "to": "Security",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
+      "from": "ExportStatus",
+      "to": "Home",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": false
+    }
+  ],
+  "traps": [
+    {
+      "route": "Login",
+      "trap": "Gate: crawler must type into two fields to progress",
+      "escape": "Type both fields and submit, or tap login-guest"
+    },
+    {
+      "route": "ForgotPassword",
+      "trap": "Off-path branch; 2 states on 1 route",
+      "escape": "Reachable from login-forgot; forgot-back returns to Login"
+    },
+    {
+      "route": "Onboarding",
+      "trap": "State aliasing - 3 near-identical states on one route",
+      "escape": "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut"
+    },
+    {
+      "route": "Requests",
+      "trap": "Overlay state that is not a route - the filter lives in a bottom-sheet Modal, so request-filter-* options exist only while the sheet is open, and opening/closing it changes screen state, never the route",
+      "escape": "Tap open-filter-sheet, then tap a request-filter-{value} option (applies the filter and closes the sheet); close-filter-sheet or Android hardware back dismisses without changing the filter"
+    },
+    {
+      "route": "Reschedule",
+      "trap": "Precondition-gated edge - reschedule-request renders on RequestDetail only while request.status is Active, so this route is invisible from Completed/Canceled requests",
+      "escape": "Enter from an Active request (e.g. REQ-1042 or REQ-1038); Completed REQ-0977 legitimately has no reschedule-request control - the missing edge is correct, not a crawler gap"
+    },
+    {
+      "route": "Search",
+      "trap": "Requires generated input - results render only when the trimmed query is >= 2 chars, so a crawler that never types sees 0 new edges",
+      "escape": "Type at least 2 characters into search-input (e.g. \"pl\" matches Plumber); a single character still shows search-empty; tap a search-result-{serviceId} row to reach ServiceDetail"
+    },
+    {
+      "route": "Activity",
+      "trap": "In-screen state vs navigation - three segments swap the list content while the route never changes",
+      "escape": "Tap activity-seg-all, activity-seg-alerts, activity-seg-receipts and record 3 states for 1 route - not 3 routes, and not 1 state"
+    },
+    {
+      "route": "SupportChat",
+      "trap": "Slow load - support-loading renders for 1500ms after every mount (screens remount per push, so the delay replays on every visit) before support-message-{n} and support-reply appear",
+      "escape": "Poll until support-loading is gone before snapshotting - settled content appears ~1.5s after entry"
+    },
+    {
+      "route": "LegalTerms",
+      "trap": "Dead end - no top back button and no tab bar; Android hardware back backgrounds the app instead of navigating",
+      "escape": "Find and tap the in-content legal-close (calls nav.back) - it is the only exit"
+    },
+    {
+      "route": "Billing",
+      "trap": "4th tab root - starts the app's deepest chain (Billing -> PaymentMethods -> AddCard and Billing -> PaymentReview -> PaymentResult); seeded INV-2405 has amount: 0 and INV-2408 has status: '' to exercise falsy-and rendering",
+      "escape": "Reachable from tab-billing in the tab bar; tap any billing-invoice-{id} row to reach PaymentReview, or open-payment-methods to go deeper via cards"
+    },
+    {
+      "route": "PaymentMethods",
+      "trap": "Depth - second level of the billing chain; add-card is the only edge deeper",
+      "escape": "Reached via open-payment-methods on Billing; tap add-card to reach AddCard, nav-back returns to Billing"
+    },
+    {
+      "route": "AddCard",
+      "trap": "Format validation - card-submit stays disabled until src/validate.js cardValid passes on all four fields; non-empty garbage does not enable it",
+      "escape": "Type 16 digits into card-number (spaces/dashes allowed), MM/YY with month 01-12 into card-expiry, exactly 3 digits into card-cvv, and any non-blank card-name; card-submit then enables and returns to PaymentMethods"
+    },
+    {
+      "route": "PaymentReview",
+      "trap": "Branch point - the simulate-decline Switch decides which of PaymentResult's two terminal states payment-pay produces",
+      "escape": "simulate-decline is reachable before paying; leave it off and tap payment-pay for success, flip it on and pay again for the declined state"
+    },
+    {
+      "route": "PaymentResult",
+      "trap": "Two terminal states on one route - success renders payment-success + payment-done, declined renders payment-declined + payment-retry; only payment-result is present in both",
+      "escape": "Reach both states by flipping simulate-decline on PaymentReview; payment-retry replaces back to PaymentReview, payment-done returns to the Billing root"
+    },
+    {
+      "route": "Documents",
+      "trap": "Load-more growth - docs-load-more appends the next 10 of 60 docs in place, so the same route gains new doc-{id} rows after each tap; the crawler must re-enqueue the changed screen and still terminate",
+      "escape": "Tap docs-load-more repeatedly; it disappears after exactly 5 taps (6 pages, docs-count reads '60 of 60'), so the growth is bounded and exhaustion terminates"
+    },
+    {
+      "route": "DocumentDetail",
+      "trap": "Param explosion - one route reachable with 60 distinct docId params; the correct model is 1 route with 60 instances, not 60 routes and not 1 state",
+      "escape": "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents"
+    },
+    {
+      "route": "HelpCenter",
+      "trap": "Alias A - renders byte-identical output (heading, body, HELP_TOPICS list, testIDs) to SupportFaq from the same shared component; only the route name and entry point differ",
+      "escape": "Record 2 distinct nodes keyed by route, not by rendered content - a crawler that dedups on screen hash merges this with SupportFaq and reports 1 where the truth is 2"
+    },
+    {
+      "route": "SupportFaq",
+      "trap": "Alias B - byte-identical rendered output and testIDs to HelpCenter; reached from Preferences (open-faq) instead of Profile (open-help)",
+      "escape": "Record 2 distinct nodes keyed by route, not by rendered content - identical appearance, distinct route"
+    },
+    {
+      "route": "Referral",
+      "trap": "Cycle - referral-open-profile pushes Profile, and Profile's open-referral pushes Referral, so the stack can grow Referral -> Profile -> Referral forever",
+      "escape": "Detect the loop by route identity and stop re-expanding visited routes; do not recurse indefinitely"
+    },
+    {
+      "route": "DangerZone",
+      "trap": "Destructive path entry - open-delete-account leads one hop deeper to the typed-confirmation reset",
+      "escape": "The screen itself is safe; the destructive action lives on DeleteAccount and requires typing the exact literal DELETE"
+    },
+    {
+      "route": "DeleteAccount",
+      "trap": "Self-destruction - delete-submit resets requests, profile, paymentMethods, and session to seed and roots the stack at Login; it stays disabled until confirmsDelete passes on the exact literal DELETE (trimmed, case-sensitive - lowercase delete does not enable it)",
+      "escape": "Recover after the reset: the app lands on Login with seed data restored; any stale param id pushed afterwards must hit the NotFound guards, not a crash"
+    },
+    {
+      "route": "NotificationDetail",
+      "trap": "Conditional cross-cluster deep link - the accessibilityLabel-only 'Open linked item' button renders on just 8 of 25 instances (the NOTIFICATION_LINKS indices), fanning out into the requests, billing, insurance, and documents clusters",
+      "escape": "Enumerate all 25 notificationId instances from inbox rows; on the 8 linked ones, find 'Open linked item' via the accessibility tree (it has no testID) - it pushes the linked route with that notification's deepLink params"
+    },
+    {
+      "route": "NotificationSettings",
+      "trap": "Param aliasing - entered from 25 NotificationDetail instances, each push carrying that notification's notificationId, which this form ignores; all 25 instances render identical content",
+      "escape": "Model 25 instances but recognize the rendered state is param-independent; fill the required 'Daily summary time' field to enable notification-settings-primary, which returns to Inbox"
+    },
+    {
+      "route": "ClaimWizard",
+      "trap": "Wizard step params - renders steps[params.step - 1] and NotFound on a missing, non-numeric, or out-of-range step, so entry MUST pass step: 1; the Next button re-pushes this same route with step + 1 (a self-edge, not a new route)",
+      "escape": "Enter via claim-start-primary (pushes step: 1); tap claim-wizard-primary through steps 2 and 3; the step-3 press lands on ClaimSubmitted with the static seeded claimId CLM-01"
+    },
+    {
+      "route": "MessageThread",
+      "trap": "Param aliasing - entered from 30 ProviderDetail instances, each push carrying providerId, which this shared thread ignores; all 30 instances render the same 6 seeded messages",
+      "escape": "Model 30 instances but recognize the rendered state is param-independent; tapping any message row (accessibilityLabel only) opens the reply composer"
+    },
+    {
+      "route": "RemindersDay",
+      "trap": "Per-instance filtered content - the same route renders a different 5-reminder subset per dayId; an unknown or missing dayId falls back to all 45 so the anchor list renders in every state",
+      "escape": "Visit all 9 dayId instances from RemindersMonth rows to see all 45 reminders; do not merge the instances just because the route name repeats"
+    },
+    {
+      "route": "RecurrencePicker",
+      "trap": "Param aliasing - entered from 45 ReminderDetail instances, each push carrying reminderId, which this picker ignores; all 45 instances render the same 4 recurrence options",
+      "escape": "Model 45 instances but recognize the rendered state is param-independent; tapping a recurrence row (accessibilityLabel only) opens the creation form"
+    },
+    {
+      "route": "Security",
+      "trap": "Hub list - unlike every other Tier B list, each row navigates to a DIFFERENT route via its item.link (linkField shape), and the TwoFactorSetup row must pass { step: 1 } or the wizard renders NotFound",
+      "escape": "Tap each of the 3 rows (accessibilityLabel only) to fan out to ChangePassword, TwoFactorSetup (step 1), and DataExport (EXP-01)"
+    },
+    {
+      "route": "TwoFactorSetup",
+      "trap": "Wizard step params - renders steps[params.step - 1] and NotFound on a bad step, so entry MUST pass step: 1; the Next button re-pushes this same route with step: 2 (a self-edge)",
+      "escape": "Enter from Security's two-factor row (pushes step: 1); tap twofactor-setup-primary twice - the step-2 press returns to Security"
+    }
+  ]
+}
