@@ -70,6 +70,20 @@ export function ProfileScreen({ nav, params, app }) {
         </View>
         <Text style={styles.chevron}>{">"}</Text>
       </Pressable>
+      <Pressable testID="open-directory" accessibilityRole="button" accessibilityLabel="Provider directory" onPress={() => nav.push("Directory")} style={styles.settingRow}>
+        <View>
+          <Text style={styles.cardTitle}>Provider directory</Text>
+          <Text style={styles.cardBody}>Browse vetted local pros</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
+      <Pressable testID="open-security" accessibilityRole="button" accessibilityLabel="Security and data" onPress={() => nav.push("Security")} style={styles.settingRow}>
+        <View>
+          <Text style={styles.cardTitle}>Security &amp; data</Text>
+          <Text style={styles.cardBody}>Password, 2FA, and data export</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
       <Pressable testID="open-danger-zone" accessibilityRole="button" accessibilityLabel="Danger zone" onPress={() => nav.push("DangerZone")} style={styles.settingRow}>
         <View>
           <Text style={styles.cardTitle}>Danger zone</Text>

@@ -413,7 +413,8 @@ const ROUTE_META = [
     edges: [
       { to: "ServiceDetail", requiresInput: false, gated: false, cycle: false },
       { to: "Search", requiresInput: false, gated: false, cycle: false },
-      { to: "Activity", requiresInput: false, gated: false, cycle: false }
+      { to: "Activity", requiresInput: false, gated: false, cycle: false },
+      { to: "Inbox", requiresInput: false, gated: false, cycle: false }
     ]
   },
   {
@@ -501,7 +502,8 @@ const ROUTE_META = [
     trap: "Overlay state that is not a route - the filter lives in a bottom-sheet Modal, so request-filter-* options exist only while the sheet is open, and opening/closing it changes screen state, never the route",
     escape: "Tap open-filter-sheet, then tap a request-filter-{value} option (applies the filter and closes the sheet); close-filter-sheet or Android hardware back dismisses without changing the filter",
     edges: [
-      { to: "RequestDetail", requiresInput: false, gated: false, cycle: false }
+      { to: "RequestDetail", requiresInput: false, gated: false, cycle: false },
+      { to: "RemindersMonth", requiresInput: false, gated: false, cycle: false }
     ]
   },
   {
@@ -591,7 +593,9 @@ const ROUTE_META = [
       { to: "SupportChat", requiresInput: false, gated: false, cycle: false },
       { to: "HelpCenter", requiresInput: false, gated: false, cycle: false },
       { to: "Referral", requiresInput: false, gated: false, cycle: true },
-      { to: "DangerZone", requiresInput: false, gated: false, cycle: false }
+      { to: "DangerZone", requiresInput: false, gated: false, cycle: false },
+      { to: "Directory", requiresInput: false, gated: false, cycle: false },
+      { to: "Security", requiresInput: false, gated: false, cycle: false }
     ]
   },
   {
@@ -696,7 +700,8 @@ const ROUTE_META = [
     edges: [
       { to: "PaymentReview", requiresInput: false, gated: false, cycle: false },
       { to: "PaymentMethods", requiresInput: false, gated: false, cycle: false },
-      { to: "Documents", requiresInput: false, gated: false, cycle: false }
+      { to: "Documents", requiresInput: false, gated: false, cycle: false },
+      { to: "Policies", requiresInput: false, gated: false, cycle: false }
     ]
   },
   {
@@ -861,6 +866,383 @@ const ROUTE_META = [
     trap: "Self-destruction - delete-submit resets requests, profile, paymentMethods, and session to seed and roots the stack at Login; it stays disabled until confirmsDelete passes on the exact literal DELETE (trimmed, case-sensitive - lowercase delete does not enable it)",
     escape: "Recover after the reset: the app lands on Login with seed data restored; any stale param id pushed afterwards must hit the NotFound guards, not a crash",
     edges: [{ to: "Login", requiresInput: true, gated: true, cycle: false }]
+  },
+
+  // -------------------------------------------------------------------------
+  // Tier B (Task 12): 22 sparsely-addressed generic routes rendered from
+  // src/screens/Bulk.js via src/screens/generic.js, configured by BULK below.
+  // Sparse addressing means each route's ONLY testIDs are
+  // `${testPrefix}-list` (lists) or `${testPrefix}-primary` (detail primary
+  // action / form submit / wizard next) - everything else is reachable only
+  // via accessibilityLabel or text. instances counts follow the Tier A
+  // precedent (PaymentReview 12, DocumentDetail 60): one instance per
+  // distinct (route, params) combination that real controls can produce,
+  // even when the rendered content ignores the param (param aliasing).
+
+  // --- Notifications cluster (Home tab) ------------------------------------
+  {
+    name: "Inbox",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["inbox-list"],
+    tab: "Home",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "NotificationDetail", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "NotificationDetail",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["notification-detail-primary"],
+    tab: "Home",
+    instances: 25,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Conditional cross-cluster deep link - the accessibilityLabel-only 'Open linked item' button renders on just 8 of 25 instances (the NOTIFICATION_LINKS indices), fanning out into the requests, billing, insurance, and documents clusters",
+    escape: "Enumerate all 25 notificationId instances from inbox rows; on the 8 linked ones, find 'Open linked item' via the accessibility tree (it has no testID) - it pushes the linked route with that notification's deepLink params",
+    edges: [
+      { to: "NotificationSettings", requiresInput: false, gated: false, cycle: false },
+      { to: "RequestDetail", requiresInput: false, gated: true, cycle: false },
+      { to: "PaymentReview", requiresInput: false, gated: true, cycle: false },
+      { to: "PolicyDetail", requiresInput: false, gated: true, cycle: false },
+      { to: "DocumentDetail", requiresInput: false, gated: true, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "NotificationSettings",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["notification-settings-primary"],
+    tab: "Home",
+    instances: 25,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Param aliasing - entered from 25 NotificationDetail instances, each push carrying that notification's notificationId, which this form ignores; all 25 instances render identical content",
+    escape: "Model 25 instances but recognize the rendered state is param-independent; fill the required 'Daily summary time' field to enable notification-settings-primary, which returns to Inbox",
+    edges: [{ to: "Inbox", requiresInput: true, gated: false, cycle: true }]
+  },
+
+  // --- Insurance cluster (Billing tab) --------------------------------------
+  {
+    name: "Policies",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["policies-list"],
+    tab: "Billing",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "PolicyDetail", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "PolicyDetail",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["policy-detail-primary"],
+    tab: "Billing",
+    instances: 6,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "ClaimStart", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "ClaimStart",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["claim-start-primary"],
+    tab: "Billing",
+    instances: 6,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "ClaimWizard", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "ClaimWizard",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["claim-wizard-primary"],
+    tab: "Billing",
+    // 6 policy-scoped step-1 entries ({ policyId, step: 1 } from ClaimStart)
+    // + 1 step-2 + 1 step-3: the step-advance push carries only
+    // { step: n + 1 }, dropping policyId.
+    instances: 8,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Wizard step params - renders steps[params.step - 1] and NotFound on a missing, non-numeric, or out-of-range step, so entry MUST pass step: 1; the Next button re-pushes this same route with step + 1 (a self-edge, not a new route)",
+    escape: "Enter via claim-start-primary (pushes step: 1); tap claim-wizard-primary through steps 2 and 3; the step-3 press lands on ClaimSubmitted with the static seeded claimId CLM-01",
+    edges: [
+      { to: "ClaimWizard", requiresInput: false, gated: false, cycle: true },
+      { to: "ClaimSubmitted", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "ClaimSubmitted",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["claim-submitted-primary"],
+    tab: "Billing",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "Policies", requiresInput: false, gated: false, cycle: true },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+
+  // --- Providers cluster (Profile tab) ---------------------------------------
+  {
+    name: "Directory",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["directory-list"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "ProviderDetail", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "ProviderDetail",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["provider-detail-primary"],
+    tab: "Profile",
+    instances: 30,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "MessageThread", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "MessageThread",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["message-thread-list"],
+    tab: "Profile",
+    instances: 30,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Param aliasing - entered from 30 ProviderDetail instances, each push carrying providerId, which this shared thread ignores; all 30 instances render the same 6 seeded messages",
+    escape: "Model 30 instances but recognize the rendered state is param-independent; tapping any message row (accessibilityLabel only) opens the reply composer",
+    edges: [{ to: "ComposeMessage", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "ComposeMessage",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["compose-message-primary"],
+    tab: "Profile",
+    // One instance per messageId pushed by a MessageThread row (6 messages).
+    instances: 6,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "MessageThread", requiresInput: true, gated: false, cycle: true }]
+  },
+
+  // --- Reminders cluster (Requests tab) --------------------------------------
+  {
+    name: "RemindersMonth",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["reminders-month-list"],
+    tab: "Requests",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "RemindersDay", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "RemindersDay",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["reminders-day-list"],
+    tab: "Requests",
+    // One instance per REMINDER_DAYS row (9 dayIds), each showing only that
+    // day's 5 reminders via BULK.RemindersDay.filter.
+    instances: 9,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Per-instance filtered content - the same route renders a different 5-reminder subset per dayId; an unknown or missing dayId falls back to all 45 so the anchor list renders in every state",
+    escape: "Visit all 9 dayId instances from RemindersMonth rows to see all 45 reminders; do not merge the instances just because the route name repeats",
+    edges: [{ to: "ReminderDetail", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "ReminderDetail",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["reminder-detail-primary"],
+    tab: "Requests",
+    instances: 45,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "RecurrencePicker", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "RecurrencePicker",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["recurrence-picker-list"],
+    tab: "Requests",
+    instances: 45,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Param aliasing - entered from 45 ReminderDetail instances, each push carrying reminderId, which this picker ignores; all 45 instances render the same 4 recurrence options",
+    escape: "Model 45 instances but recognize the rendered state is param-independent; tapping a recurrence row (accessibilityLabel only) opens the creation form",
+    edges: [{ to: "CreateReminder", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "CreateReminder",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["create-reminder-primary"],
+    tab: "Requests",
+    // One instance per recurrenceId pushed by a RecurrencePicker row.
+    instances: 4,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "RemindersMonth", requiresInput: true, gated: false, cycle: true }]
+  },
+
+  // --- Security & data cluster (Profile tab) ----------------------------------
+  {
+    name: "Security",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["security-list"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Hub list - unlike every other Tier B list, each row navigates to a DIFFERENT route via its item.link (linkField shape), and the TwoFactorSetup row must pass { step: 1 } or the wizard renders NotFound",
+    escape: "Tap each of the 3 rows (accessibilityLabel only) to fan out to ChangePassword, TwoFactorSetup (step 1), and DataExport (EXP-01)",
+    edges: [
+      { to: "ChangePassword", requiresInput: false, gated: false, cycle: false },
+      { to: "TwoFactorSetup", requiresInput: false, gated: false, cycle: false },
+      { to: "DataExport", requiresInput: false, gated: false, cycle: false }
+    ]
+  },
+  {
+    name: "ChangePassword",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["change-password-primary"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [{ to: "Security", requiresInput: true, gated: false, cycle: true }]
+  },
+  {
+    name: "TwoFactorSetup",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["twofactor-setup-primary"],
+    tab: "Profile",
+    // Step 1 (entry from Security's row) + step 2 (self-push).
+    instances: 2,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Wizard step params - renders steps[params.step - 1] and NotFound on a bad step, so entry MUST pass step: 1; the Next button re-pushes this same route with step: 2 (a self-edge)",
+    escape: "Enter from Security's two-factor row (pushes step: 1); tap twofactor-setup-primary twice - the step-2 press returns to Security",
+    edges: [
+      { to: "TwoFactorSetup", requiresInput: false, gated: false, cycle: true },
+      { to: "Security", requiresInput: false, gated: false, cycle: true },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "DataExport",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["data-export-primary"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "ExportStatus", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "ExportStatus",
+    tier: "B",
+    addressing: "sparse",
+    anchors: ["export-status-primary"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: null,
+    escape: null,
+    edges: [
+      { to: "Security", requiresInput: false, gated: false, cycle: true },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
   }
 ];
 

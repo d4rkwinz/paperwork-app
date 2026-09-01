@@ -4,7 +4,7 @@ const path = require("path");
 const data = require("../src/data.js");
 const { slug } = require("../src/slug.js");
 
-const { SERVICES, DATES, TIMES, PRIORITIES, ADDRESSES, INITIAL_REQUESTS, ROUTE_META } = data;
+const { SERVICES, DATES, TIMES, PRIORITIES, ADDRESSES, INITIAL_REQUESTS, ROUTE_META, BULK } = data;
 
 // slug() is the single source of truth for testID derivation across the
 // whole project (screens, ui.js, and this test all use src/slug.js) - a
@@ -195,6 +195,22 @@ for (const [filePath, text] of fileTextByPath) {
   testIdsByFile.set(filePath, buildTestIdsForFile(text));
 }
 
+// Tier B routes render through src/screens/generic.js, whose only testIDs
+// are the dynamic templates `${cfg.testPrefix}-list` (ListScreen's
+// ScrollView) and `${cfg.testPrefix}-primary` (detail primary action / form
+// submit / wizard next). Reconstruct the exact, per-route set from BULK -
+// stronger than the per-file scoping above, since two Tier B routes share
+// the same source file but must never claim each other's anchors. A detail
+// route with no actions renders NO primary button, so it legitimately has
+// zero addressable testIDs and any anchor on it must fail.
+function bulkTestIds(cfg) {
+  return cfg.kind === "list"
+    ? new Set([`${cfg.testPrefix}-list`])
+    : cfg.kind === "detail" && !(cfg.actions && cfg.actions.length)
+      ? new Set()
+      : new Set([`${cfg.testPrefix}-primary`]);
+}
+
 for (const entry of ROUTE_META) {
   const component = routeToComponent[entry.name];
   assert.ok(
@@ -206,11 +222,12 @@ for (const entry of ROUTE_META) {
     file,
     `ROUTE_META.${entry.name}'s component "${component}" has no "export function ${component}" found under src/screens/*.js or src/ui.js`
   );
-  const fileTestIds = testIdsByFile.get(file);
+  const bulkCfg = BULK[entry.name];
+  const fileTestIds = bulkCfg ? bulkTestIds(bulkCfg) : testIdsByFile.get(file);
   for (const anchor of entry.anchors) {
     assert.ok(
       fileTestIds.has(anchor),
-      `ROUTE_META.${entry.name} declares anchor "${anchor}", but no testID matching it was found in ${path.relative(path.join(__dirname, ".."), file)} (the file that renders ${entry.name}) - check for a typo, a rename, a copy-paste from another route's anchor, or an anchor that only exists in some of the route's states`
+      `ROUTE_META.${entry.name} declares anchor "${anchor}", but no testID matching it was found in ${bulkCfg ? `its BULK config (kind ${bulkCfg.kind}, testPrefix ${bulkCfg.testPrefix})` : `${path.relative(path.join(__dirname, ".."), file)} (the file that renders ${entry.name})`} - check for a typo, a rename, a copy-paste from another route's anchor, or an anchor that only exists in some of the route's states`
     );
   }
 }

@@ -46,6 +46,19 @@ export function BillingScreen({ nav, params, app }) {
         </View>
         <Text style={styles.chevron}>{">"}</Text>
       </Pressable>
+      <Pressable
+        testID="open-policies"
+        accessibilityRole="button"
+        accessibilityLabel="Insurance policies"
+        onPress={() => nav.push("Policies")}
+        style={styles.settingRow}
+      >
+        <View>
+          <Text style={styles.cardTitle}>Insurance policies</Text>
+          <Text style={styles.cardBody}>Coverage, renewals, and claims</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
       <Text style={styles.sectionTitle}>Invoices</Text>
       {INVOICES.map((invoice) => (
         <Pressable

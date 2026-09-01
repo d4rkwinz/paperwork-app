@@ -48,6 +48,19 @@ export function RequestsScreen({ nav, params, app }) {
           </View>
         </View>
       </Modal>
+      <Pressable
+        testID="open-reminders"
+        accessibilityRole="button"
+        accessibilityLabel="Reminders"
+        onPress={() => nav.push("RemindersMonth")}
+        style={[styles.settingRow, { marginTop: 0, marginBottom: 12 }]}
+      >
+        <View>
+          <Text style={styles.cardTitle}>Reminders</Text>
+          <Text style={styles.cardBody}>Renewals, payments, and follow-ups</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
       {visibleRequests.map((request) => (
         <Pressable
           key={request.id}

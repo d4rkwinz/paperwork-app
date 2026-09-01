@@ -38,6 +38,19 @@ export function HomeScreen({ nav, params, app }) {
         </View>
         <Text style={styles.chevron}>{">"}</Text>
       </Pressable>
+      <Pressable
+        testID="open-inbox"
+        accessibilityRole="button"
+        accessibilityLabel="Notifications inbox"
+        onPress={() => nav.push("Inbox")}
+        style={styles.settingRow}
+      >
+        <View>
+          <Text style={styles.cardTitle}>Notifications</Text>
+          <Text style={styles.cardBody}>Updates, invoices, and notices</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
       <Text style={styles.sectionTitle}>Services</Text>
       <View style={styles.cardGrid}>
         {SERVICES.map((service) => (
