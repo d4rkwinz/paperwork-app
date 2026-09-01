@@ -146,9 +146,27 @@ const TAB_BAR_HEIGHT = 72;
 
 // ROUTE_META: one entry per route in App.js's ROUTES map. This is the
 // ground-truth source Task 14's crawler-graph checker builds from, so
-// "edges" here are derived from the actual nav.push/replace/root call sites
-// in each screen (src/screens/*.js), not guessed. See task-5-report.md for
-// how each v1.0 route's edges/anchors/instances were determined.
+// "edges" are derived from actual call sites, not guessed.
+//
+// Edge convention (apply uniformly when adding routes):
+//   An edge A -> B exists wherever an IN-CONTENT control rendered on route
+//   A - a button/Pressable/row inside the screen's own content, including
+//   shared components it renders such as ui.js's NotFound - causes a route
+//   change to B, REGARDLESS of which nav method implements it (nav.push,
+//   nav.replace, nav.root, or nav.back). So AddCard -> PaymentMethods
+//   (card-submit calls nav.back()) and LegalTerms -> Preferences
+//   (legal-close calls nav.back()) are edges: for a nav.back() edge, the
+//   target is the route that pushed this one. Every route that renders the
+//   NotFound guard gets a "Home, gated: true" edge from notfound-home's
+//   nav.root("Home") - gated because it only renders when the route's
+//   params dereference fails.
+//
+//   Chrome back is NOT modeled: the shell's top-bar back button and Android
+//   hardware back are universal stack behavior available on every
+//   non-NO_BACK route - a property of the shell, not of the graph.
+//
+// See task-5-report.md for how each v1.0 route's edges/anchors/instances
+// were determined.
 const ROUTE_META = [
   {
     name: "Login",
@@ -444,10 +462,10 @@ const ROUTE_META = [
     instances: 1,
     noBack: true,
     noTabs: true,
-    terminal: true,
+    terminal: false,
     trap: "Dead end - no top back button and no tab bar; Android hardware back backgrounds the app instead of navigating",
     escape: "Find and tap the in-content legal-close (calls nav.back) - it is the only exit",
-    edges: []
+    edges: [{ to: "Preferences", requiresInput: false, gated: false, cycle: true }]
   },
   {
     name: "Billing",
@@ -506,7 +524,10 @@ const ROUTE_META = [
     terminal: false,
     trap: "Branch point - the simulate-decline Switch decides which of PaymentResult's two terminal states payment-pay produces",
     escape: "simulate-decline is reachable before paying; leave it off and tap payment-pay for success, flip it on and pay again for the declined state",
-    edges: [{ to: "PaymentResult", requiresInput: false, gated: false, cycle: false }]
+    edges: [
+      { to: "PaymentResult", requiresInput: false, gated: false, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
   },
   {
     name: "PaymentResult",

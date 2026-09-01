@@ -214,3 +214,36 @@ for (const entry of ROUTE_META) {
     );
   }
 }
+
+// Edge drift check: every literal nav.push("X") / nav.replace("X") /
+// nav.root("X") target in a screen file must appear as an edge `to` on at
+// least one ROUTE_META entry whose component is exported from that same
+// file. This catches the drift class where a screen gains (or keeps) a nav
+// call whose target no route in the file declares as an edge.
+//
+// What it CANNOT catch - these remain governed by the manual convention in
+// src/data.js's ROUTE_META comment and are invisible to this per-file
+// literal scan:
+//   - nav.back() edges (e.g. card-submit -> PaymentMethods, legal-close ->
+//     Preferences): back has no literal target to scan for.
+//   - Edges arising from shared components rendered by a screen, such as
+//     ui.js's NotFound (notfound-home -> nav.root("Home")): the literal
+//     lives in ui.js, not the screen file.
+//   - Attribution to the RIGHT route within a file: it only proves SOME
+//     route in the file declares the edge, not that the correct one does.
+const fileToEdgeTargets = new Map();
+for (const entry of ROUTE_META) {
+  const file = componentToFile[routeToComponent[entry.name]];
+  if (!fileToEdgeTargets.has(file)) fileToEdgeTargets.set(file, new Set());
+  for (const edge of entry.edges) fileToEdgeTargets.get(file).add(edge.to);
+}
+for (const filePath of screenFilePaths) {
+  const text = fileTextByPath.get(filePath);
+  const declaredTargets = fileToEdgeTargets.get(filePath) || new Set();
+  for (const m of text.matchAll(/nav\.(push|replace|root)\("([^"]+)"/g)) {
+    assert.ok(
+      declaredTargets.has(m[2]),
+      `${path.relative(path.join(__dirname, ".."), filePath)} calls nav.${m[1]}("${m[2]}"), but no ROUTE_META entry rendered from that file declares an edge to "${m[2]}" - add the edge to the route whose control makes this call (this scan cannot tell which route that is)`
+    );
+  }
+}

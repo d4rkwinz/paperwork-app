@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { INVOICES } from "../data";
-import { NotFound, PrimaryButton, ReviewBlock, SecondaryButton, ToggleRow } from "../ui";
+import { NotFound, PrimaryButton, ReviewBlock, ToggleRow } from "../ui";
 import { cardValid } from "../validate";
 import styles from "../styles";
 
