@@ -548,3 +548,25 @@ for (const [name, cfg] of Object.entries(BULK)) {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Task 13: v1.0 collections expanded to final counts.
+
+assert.strictEqual(data.SERVICES.length, 24, "24 services");
+
+// The 4 v1.0 services must survive verbatim - Flow 1 depends on service-plumbing
+// and GUIDELINES.md documents these testIDs.
+for (const id of ["cleaning", "plumbing", "groceries", "car"]) {
+  assert.ok(data.SERVICES.some((s) => s.id === id), `v1.0 service ${id} is preserved`);
+}
+
+// Tier A instance counts that track SERVICES: one ServiceDetail instance per
+// service, one BookingForm instance per book-service push.
+for (const name of ["ServiceDetail", "BookingForm"]) {
+  const meta = ROUTE_META.find((entry) => entry.name === name);
+  assert.strictEqual(
+    meta.instances,
+    data.SERVICES.length,
+    `ROUTE_META.${name}.instances tracks SERVICES.length`
+  );
+}

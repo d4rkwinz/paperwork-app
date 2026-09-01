@@ -43,6 +43,35 @@ const SERVICES = [
   }
 ];
 
+// v1.1 expansion (Task 13): 20 generated services appended AFTER the 4 v1.0
+// originals, which stay verbatim and first - GUIDELINES.md's flows and
+// external agent suites target service-{cleaning,plumbing,groceries,car} by
+// testID (service-plumbing is Flow 1's entry point). Same deterministic
+// index-based generator pattern as DOCUMENTS/PROVIDERS below: pure function
+// of the loop index over fixed tables, no Math.random(), no Date.
+const EXTRA_SERVICE_TITLES = [
+  "Lawn care", "Window washing", "Pest control", "Dog walking", "Laundry pickup",
+  "Handyman visit", "Electrical check", "Gutter cleaning", "Appliance repair", "Furniture assembly",
+  "Pool maintenance", "Carpet shampoo", "Junk removal", "Package returns", "Bike tune-up",
+  "House sitting", "Meal prep", "Snow removal", "Pressure washing", "Closet organizing"
+];
+const EXTRA_SERVICE_CATEGORIES = ["Home", "Repair", "Errands", "Auto", "Outdoor"];
+const EXTRA_SERVICE_ETAS = ["45-60 min", "1-2 hr", "2-3 hr", "Half day", "Same day"];
+const EXTRA_SERVICE_ACCENTS = ["#2F7D6D", "#C55A3C", "#4D65A8", "#8B6F35", "#6B4F8A", "#3E7A9C"];
+for (let i = 0; i < 20; i += 1) {
+  const title = EXTRA_SERVICE_TITLES[i];
+  SERVICES.push({
+    id: `svc-${String(i + 5).padStart(2, "0")}`,
+    title,
+    category: EXTRA_SERVICE_CATEGORIES[i % 5],
+    short: `${title} handled by a vetted local pro.`,
+    details: `Book ${title.toLowerCase()} with upfront pricing and status updates from start to finish.`,
+    price: `$${25 + ((i * 13) % 110)}`,
+    eta: EXTRA_SERVICE_ETAS[i % 5],
+    accent: EXTRA_SERVICE_ACCENTS[i % 6]
+  });
+}
+
 const DATES = ["Today", "Tomorrow", "Fri Apr 26", "Sat Apr 27"];
 const TIMES = ["8:00 AM", "10:30 AM", "1:00 PM", "4:30 PM"];
 const PRIORITIES = ["Normal", "High", "Urgent"];
@@ -423,7 +452,8 @@ const ROUTE_META = [
     addressing: "exhaustive",
     anchors: ["book-service"],
     tab: "Home",
-    instances: 4,
+    // One instance per SERVICES item (24 after the Task 13 expansion).
+    instances: 24,
     noBack: false,
     noTabs: false,
     terminal: false,
@@ -440,7 +470,8 @@ const ROUTE_META = [
     addressing: "exhaustive",
     anchors: ["review-booking"],
     tab: "Home",
-    instances: 4,
+    // One instance per serviceId pushed by ServiceDetail's book-service (24).
+    instances: 24,
     noBack: false,
     noTabs: false,
     terminal: false,
