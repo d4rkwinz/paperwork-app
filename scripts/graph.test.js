@@ -26,11 +26,13 @@ for (const n of g.nodes) {
     assert.ok(n.escape && n.escape.length > 10, `trap ${n.name} documents an escape`);
   }
 }
-assert.strictEqual(
-  g.traps.length,
-  g.nodes.filter((n) => n.trap).length,
-  "traps summary covers exactly the trap routes"
-);
+// The traps summary must bind to the data, not merely mirror buildGraph()'s
+// own derivation: hold it to the spec count and to real routes with escapes.
+assert.strictEqual(g.traps.length, 29, `trap count matches the spec (29), got ${g.traps.length}`);
+for (const t of g.traps) {
+  assert.ok(names.has(t.route), `traps summary route ${t.route} is a real route`);
+  assert.ok(t.escape && t.escape.length > 10, `traps summary for ${t.route} carries a non-empty escape`);
+}
 
 // Every no-back route must have at least one outbound edge, or it is a genuine
 // soft-lock rather than a solvable dead end.
