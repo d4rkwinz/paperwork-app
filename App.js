@@ -15,7 +15,8 @@ import {
   EditRequestReviewScreen,
   EditRequestScreen,
   RequestDetailScreen,
-  RequestsScreen
+  RequestsScreen,
+  RescheduleScreen
 } from "./src/screens/Requests";
 import { AddressesScreen, PreferencesScreen, ProfileScreen } from "./src/screens/Profile";
 import { ForgotPasswordScreen, LoginScreen, OnboardingScreen } from "./src/screens/Auth";
@@ -48,6 +49,7 @@ const ROUTES = {
   RequestDetail: RequestDetailScreen,
   EditRequest: EditRequestScreen,
   EditRequestReview: EditRequestReviewScreen,
+  Reschedule: RescheduleScreen,
   Profile: ProfileScreen,
   Preferences: PreferencesScreen,
   Addresses: AddressesScreen,

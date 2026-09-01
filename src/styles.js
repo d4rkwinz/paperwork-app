@@ -411,6 +411,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 18
   },
+  sheetScrim: {
+    flex: 1,
+    backgroundColor: "rgba(35, 33, 30, 0.45)",
+    justifyContent: "flex-end"
+  },
+  sheetCard: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    padding: 18,
+    paddingBottom: 28
+  },
   settingRow: {
     minHeight: 82,
     flexDirection: "row",

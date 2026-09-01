@@ -6,13 +6,48 @@ import styles from "../styles";
 
 export function RequestsScreen({ nav, params, app }) {
   const [filter, setFilter] = useState("Active");
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const visibleRequests = app.requests.filter((request) => (filter === "All" ? true : request.status === filter));
+
+  // Picking an option applies the filter and closes the sheet in one tap.
+  // Kept as a named handler (not an inline arrow on <ChoiceRow />) so
+  // scripts/data.test.js's <ChoiceRow ...[^>]*?/> tag scan stays resolvable.
+  const applyFilter = (option) => {
+    setFilter(option);
+    setFilterSheetOpen(false);
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={styles.kicker}>Requests</Text>
       <Text style={styles.h1}>Track and adjust</Text>
-      <ChoiceRow options={["Active", "Completed", "Canceled", "All"]} value={filter} onChange={setFilter} testPrefix="request-filter" />
+      <Pressable
+        testID="open-filter-sheet"
+        accessibilityRole="button"
+        accessibilityLabel={`Filter requests, currently ${filter}`}
+        onPress={() => setFilterSheetOpen(true)}
+        style={[styles.settingRow, { marginTop: 0, marginBottom: 12 }]}
+      >
+        <View>
+          <Text style={styles.cardEyebrow}>Filter</Text>
+          <Text style={styles.cardTitle}>{filter}</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
+      <Modal
+        visible={filterSheetOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setFilterSheetOpen(false)}
+      >
+        <View style={styles.sheetScrim}>
+          <View testID="filter-sheet" accessibilityLabel="Filter requests sheet" style={styles.sheetCard}>
+            <Text style={styles.h2}>Filter requests</Text>
+            <ChoiceRow options={["Active", "Completed", "Canceled", "All"]} value={filter} onChange={applyFilter} testPrefix="request-filter" />
+            <SecondaryButton label="Close" testID="close-filter-sheet" onPress={() => setFilterSheetOpen(false)} />
+          </View>
+        </View>
+      </Modal>
       {visibleRequests.map((request) => (
         <Pressable
           key={request.id}
@@ -77,6 +112,11 @@ export function RequestDetailScreen({ nav, params, app }) {
       {editable && (
         <>
           <PrimaryButton label="Edit request" testID="edit-request" onPress={() => nav.push("EditRequest", { request })} />
+          <SecondaryButton
+            label="Reschedule"
+            testID="reschedule-request"
+            onPress={() => nav.push("Reschedule", { requestId: request.id })}
+          />
           <SecondaryButton label="Cancel request" testID="cancel-request" onPress={() => setConfirmingCancel(true)} danger />
         </>
       )}
@@ -175,6 +215,41 @@ export function EditRequestReviewScreen({ nav, params, app }) {
         testID="edit-request-details"
         onPress={() => nav.replace("EditRequest", { request })}
       />
+    </ScrollView>
+  );
+}
+
+// Entry point (reschedule-request on RequestDetail) renders only while the
+// request is Active, so this route is unreachable from Completed/Canceled
+// requests - the precondition-gated edge Task 9 exists to model.
+export function RescheduleScreen({ nav, params, app }) {
+  const request = app.requests.find((item) => item.id === params.requestId);
+  const [date, setDate] = useState(request?.date);
+  const [time, setTime] = useState(request?.time);
+
+  if (!request) {
+    return <NotFound label="Request" nav={nav} />;
+  }
+
+  const submitReschedule = () => {
+    app.setRequests((current) =>
+      current.map((item) =>
+        item.id === request.id ? { ...item, date, time, timeline: [...item.timeline, "Rescheduled"] } : item
+      )
+    );
+    nav.back();
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Text style={styles.kicker}>Reschedule</Text>
+      <Text style={styles.h1}>{request.id}</Text>
+      <Text style={styles.bodyText}>Pick a new slot for {request.title}.</Text>
+      <Text style={styles.label}>Date</Text>
+      <ChoiceRow options={DATES} value={date} onChange={setDate} testPrefix="reschedule-date" />
+      <Text style={styles.label}>Time</Text>
+      <ChoiceRow options={TIMES} value={time} onChange={setTime} testPrefix="reschedule-time" />
+      <PrimaryButton label="Confirm reschedule" testID="reschedule-submit" onPress={submitReschedule} />
     </ScrollView>
   );
 }

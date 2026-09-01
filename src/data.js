@@ -323,14 +323,18 @@ const ROUTE_META = [
     name: "Requests",
     tier: "v1",
     addressing: "exhaustive",
-    anchors: ["request-filter-active"],
+    // Anchor moved off request-filter-active in Task 9: the filter ChoiceRow
+    // now lives inside the bottom-sheet Modal, so request-filter-* only
+    // renders while the sheet is open. open-filter-sheet renders in every
+    // state of the route.
+    anchors: ["open-filter-sheet"],
     tab: "Requests",
     instances: 1,
     noBack: false,
     noTabs: false,
     terminal: false,
-    trap: null,
-    escape: null,
+    trap: "Overlay state that is not a route - the filter lives in a bottom-sheet Modal, so request-filter-* options exist only while the sheet is open, and opening/closing it changes screen state, never the route",
+    escape: "Tap open-filter-sheet, then tap a request-filter-{value} option (applies the filter and closes the sheet); close-filter-sheet or Android hardware back dismisses without changing the filter",
     edges: [{ to: "RequestDetail", requiresInput: false, gated: false, cycle: false }]
   },
   {
@@ -347,6 +351,24 @@ const ROUTE_META = [
     escape: null,
     edges: [
       { to: "EditRequest", requiresInput: false, gated: true, cycle: false },
+      { to: "Reschedule", requiresInput: false, gated: true, cycle: false },
+      { to: "Home", requiresInput: false, gated: true, cycle: false }
+    ]
+  },
+  {
+    name: "Reschedule",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["reschedule-submit"],
+    tab: "Requests",
+    instances: 2,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Precondition-gated edge - reschedule-request renders on RequestDetail only while request.status is Active, so this route is invisible from Completed/Canceled requests",
+    escape: "Enter from an Active request (REQ-1042 or REQ-1038); Completed REQ-0977 legitimately has no reschedule-request control - the missing edge is correct, not a crawler gap",
+    edges: [
+      { to: "RequestDetail", requiresInput: false, gated: false, cycle: true },
       { to: "Home", requiresInput: false, gated: true, cycle: false }
     ]
   },
