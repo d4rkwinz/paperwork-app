@@ -285,3 +285,192 @@ assert.ok(Number.isFinite(pages) && pages <= 10, `load-more terminates in ${page
 // the falsy-and regression covered by seed data rather than by memory.
 assert.ok(INVOICES.some((i) => i.amount === 0), "an invoice with amount 0 exists");
 assert.ok(INVOICES.some((i) => i.status === ""), "an invoice with an empty status exists");
+
+// ---------------------------------------------------------------------------
+// BULK sanity (Task 12). BULK configs are executed blind by the generic
+// renderers: a typo'd `collection` is an immediate `undefined.map` TypeError
+// at runtime, a bad route name lands on NotFound, and a form/wizard exiting
+// to a param-requiring route with no nextParams renders NotFound too. Catch
+// all of that here, at the data layer.
+
+const KIND_KEYS = {
+  list: ["title", "heading", "collection", "itemLabel", "testPrefix"],
+  detail: ["collection", "param", "label", "titleField", "rows", "testPrefix"],
+  form: ["title", "heading", "fields", "submitLabel", "nextRoute", "testPrefix"],
+  wizard: ["title", "label", "route", "steps", "submitLabel", "nextRoute", "testPrefix"]
+};
+
+// Where params pushed into a route must resolve. Tier B routes resolve via
+// their own BULK config; these are the Tier A param-taking routes that Tier B
+// deep links target.
+const TIER_A_PARAM_COLLECTIONS = {
+  RequestDetail: ["requestId", INITIAL_REQUESTS],
+  PaymentReview: ["invoiceId", INVOICES],
+  DocumentDetail: ["docId", DOCUMENTS]
+};
+
+// Assert that pushing `route` with `params` lands on a found state, not
+// NotFound - for every navigation whose params are DATA (deep links,
+// Security's link rows, form/wizard nextParams), where a stale id would
+// otherwise fail silently at runtime.
+function assertParamsResolve(route, params, context) {
+  const target = BULK[route];
+  if (target && target.kind === "detail") {
+    const id = params ? params[target.param] : undefined;
+    assert.ok(
+      data[target.collection].some((item) => item.id === id),
+      `${context} pushes ${route} with ${target.param}=${JSON.stringify(id)}, which is not an id in ${target.collection} - it would render NotFound`
+    );
+  } else if (target && target.kind === "wizard") {
+    const step = params ? params.step : undefined;
+    assert.ok(
+      Number.isInteger(step) && step >= 1 && step <= target.steps.length,
+      `${context} pushes wizard ${route} with step=${JSON.stringify(step)} (valid: integer 1..${target.steps.length}) - it would render NotFound`
+    );
+  } else if (TIER_A_PARAM_COLLECTIONS[route]) {
+    const [param, collection] = TIER_A_PARAM_COLLECTIONS[route];
+    const id = params ? params[param] : undefined;
+    assert.ok(
+      collection.some((item) => item.id === id),
+      `${context} pushes ${route} with ${param}=${JSON.stringify(id)}, which is not a seeded id - it would render NotFound`
+    );
+  }
+  // Lists, forms, and param-free Tier A routes accept any params.
+}
+
+const bulkNames = Object.keys(BULK);
+assert.ok(bulkNames.length > 0, "BULK is populated");
+
+// BULK and tier-B ROUTE_META must be the same set of routes.
+const tierBNames = ROUTE_META.filter((entry) => entry.tier === "B").map((entry) => entry.name);
+assert.deepStrictEqual(
+  [...bulkNames].sort(),
+  [...tierBNames].sort(),
+  "BULK keys and tier-B ROUTE_META entries must be the same route set"
+);
+
+// testPrefixes must be unique - two routes sharing one would emit identical
+// testIDs on distinct routes, silently aliasing their anchors.
+const prefixes = bulkNames.map((name) => BULK[name].testPrefix);
+assert.strictEqual(new Set(prefixes).size, prefixes.length, "BULK testPrefixes are unique");
+
+for (const [name, cfg] of Object.entries(BULK)) {
+  const meta = ROUTE_META.find((entry) => entry.name === name);
+  assert.ok(meta.addressing === "sparse", `BULK.${name}'s ROUTE_META entry must be addressing: "sparse"`);
+  assert.ok(meta.anchors.length <= 2, `BULK.${name} is sparse - at most 2 anchors, got ${meta.anchors.length}`);
+
+  assert.ok(KIND_KEYS[cfg.kind], `BULK.${name}.kind "${cfg.kind}" is not list|detail|form|wizard`);
+  for (const key of KIND_KEYS[cfg.kind]) {
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(cfg, key),
+      `BULK.${name} (kind ${cfg.kind}) is missing required key "${key}"`
+    );
+  }
+
+  const declaredEdges = new Set(meta.edges.map((edge) => edge.to));
+  // Every nav target this config can produce must be a real route AND a
+  // declared edge on this route's ROUTE_META entry (the Tier B analog of the
+  // literal nav-scan drift check above, which cannot see dynamic targets).
+  const navTargets = [];
+
+  if (cfg.kind === "list" || cfg.kind === "detail") {
+    const collection = data[cfg.collection];
+    assert.ok(
+      Array.isArray(collection) && collection.length > 0,
+      `BULK.${name}.collection "${cfg.collection}" does not resolve to a non-empty exported array - DATA[collection].map would throw at runtime`
+    );
+    const itemIds = collection.map((item) => item.id);
+    assert.strictEqual(
+      new Set(itemIds).size,
+      itemIds.length,
+      `BULK.${name}.collection "${cfg.collection}" has duplicate ids - ids are row keys and route params`
+    );
+    for (const id of itemIds) {
+      assert.ok(id !== undefined && id !== null && String(id).length > 0, `BULK.${name}.collection "${cfg.collection}" has an item with no id`);
+    }
+  }
+
+  if (cfg.kind === "list") {
+    for (const item of data[cfg.collection]) {
+      assert.ok(String(cfg.itemLabel(item)).length > 0, `BULK.${name}.itemLabel is empty for item ${item.id}`);
+      if (cfg.itemSub) {
+        assert.ok(String(cfg.itemSub(item)).length > 0, `BULK.${name}.itemSub is empty for item ${item.id}`);
+      }
+    }
+    if (cfg.linkField) {
+      // Hub list: every row MUST carry a link, or that row has nowhere to go.
+      for (const item of data[cfg.collection]) {
+        const link = item[cfg.linkField];
+        assert.ok(link && typeof link.route === "string", `BULK.${name} uses linkField "${cfg.linkField}" but item ${item.id} has no ${cfg.linkField}.route`);
+        navTargets.push(link.route);
+        assertParamsResolve(link.route, link.params, `BULK.${name} row ${item.id}`);
+      }
+    } else {
+      assert.ok(cfg.itemRoute && cfg.itemParam, `BULK.${name} is a list with neither linkField nor itemRoute+itemParam - its rows have nowhere to go`);
+      navTargets.push(cfg.itemRoute);
+    }
+  }
+
+  if (cfg.kind === "detail") {
+    const collection = data[cfg.collection];
+    for (const item of collection) {
+      assert.ok(item[cfg.titleField] !== undefined, `BULK.${name}.titleField "${cfg.titleField}" is missing on item ${item.id}`);
+    }
+    assert.ok(Array.isArray(cfg.rows) && cfg.rows.length > 0, `BULK.${name}.rows must be a non-empty array`);
+    for (const row of cfg.rows) {
+      assert.ok(Array.isArray(row) && row.length === 2, `BULK.${name} has a malformed row ${JSON.stringify(row)} - expected [label, field]`);
+      for (const item of collection) {
+        assert.ok(item[row[1]] !== undefined, `BULK.${name} row field "${row[1]}" is missing on item ${item.id}`);
+      }
+    }
+    const actions = cfg.actions ? cfg.actions : [];
+    for (const action of actions) {
+      assert.ok(action.label && action.route, `BULK.${name} has an action missing label or route`);
+      navTargets.push(action.route);
+    }
+    // A detail with no actions emits ZERO testIDs; its ROUTE_META anchors
+    // are already checked against the derived (empty) set above.
+    if (cfg.deepLinkField) {
+      let linked = 0;
+      for (const item of collection) {
+        const link = item[cfg.deepLinkField];
+        if (!link) continue;
+        linked += 1;
+        assert.ok(typeof link.route === "string", `BULK.${name} item ${item.id} deep link has no route`);
+        navTargets.push(link.route);
+        assertParamsResolve(link.route, link.params, `BULK.${name} item ${item.id} deep link`);
+      }
+      assert.ok(linked > 0, `BULK.${name} declares deepLinkField "${cfg.deepLinkField}" but no item in ${cfg.collection} carries it`);
+    }
+  }
+
+  if (cfg.kind === "form" || cfg.kind === "wizard") {
+    const fieldGroups = cfg.kind === "form" ? [cfg.fields] : cfg.steps.map((step) => step.fields);
+    assert.ok(fieldGroups.length > 0, `BULK.${name} has no fields/steps`);
+    for (const fields of fieldGroups) {
+      assert.ok(Array.isArray(fields) && fields.length > 0, `BULK.${name} has an empty field group`);
+      for (const field of fields) {
+        assert.ok(field.key && field.label, `BULK.${name} has a field missing key or label`);
+      }
+    }
+    if (cfg.kind === "wizard") {
+      assert.strictEqual(cfg.route, name, `BULK.${name}.route must be the wizard's own route name, got "${cfg.route}"`);
+      for (const step of cfg.steps) {
+        assert.ok(step.heading, `BULK.${name} has a step with no heading`);
+      }
+      navTargets.push(cfg.route); // the step-advance self-push
+    }
+    navTargets.push(cfg.nextRoute);
+    // The final push carries only cfg.nextParams; if the exit target needs
+    // params (a detail or wizard), nextParams must fully satisfy it.
+    assertParamsResolve(cfg.nextRoute, cfg.nextParams, `BULK.${name} ${cfg.kind} exit`);
+  }
+
+  for (const target of navTargets) {
+    assert.ok(routeNameSet.has(target), `BULK.${name} navigates to "${target}", which is not a real ROUTE_META route`);
+    assert.ok(
+      declaredEdges.has(target),
+      `BULK.${name} can navigate to "${target}", but ROUTE_META.${name} declares no edge to it - the ground-truth graph would be missing a real edge`
+    );
+  }
+}
