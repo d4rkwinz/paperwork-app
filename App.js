@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BackHandler, Pressable, SafeAreaView, StatusBar, Text, View } from "react-native";
-import { ADDRESSES, INITIAL_REQUESTS } from "./src/data";
+import { ADDRESSES, INITIAL_REQUESTS, PAYMENT_METHODS } from "./src/data";
 import { NotFound, Tab } from "./src/ui";
 import styles from "./src/styles";
 import * as navcore from "./src/navcore";
@@ -25,6 +25,13 @@ import {
   SearchScreen,
   SupportChatScreen
 } from "./src/screens/Misc";
+import {
+  AddCardScreen,
+  BillingScreen,
+  PaymentMethodsScreen,
+  PaymentResultScreen,
+  PaymentReviewScreen
+} from "./src/screens/Billing";
 
 const ROUTES = {
   Login: LoginScreen,
@@ -45,7 +52,12 @@ const ROUTES = {
   Search: SearchScreen,
   Activity: ActivityScreen,
   SupportChat: SupportChatScreen,
-  LegalTerms: LegalTermsScreen
+  LegalTerms: LegalTermsScreen,
+  Billing: BillingScreen,
+  PaymentMethods: PaymentMethodsScreen,
+  AddCard: AddCardScreen,
+  PaymentReview: PaymentReviewScreen,
+  PaymentResult: PaymentResultScreen
 };
 
 const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding", "LegalTerms"]);
@@ -55,6 +67,7 @@ export default function App() {
   const [stack, setStack] = useState(() => navcore.root("Login"));
   const [session, setSession] = useState({ signedIn: false, guest: false });
   const [requests, setRequests] = useState(INITIAL_REQUESTS);
+  const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
   const [profile, setProfile] = useState({
     name: "Alex Morgan",
     phone: "+1 555 014 2920",
@@ -86,7 +99,16 @@ export default function App() {
     return () => sub.remove();
   }, [stack, route.name]);
 
-  const app = { requests, setRequests, profile, setProfile, session, setSession };
+  const app = {
+    requests,
+    setRequests,
+    profile,
+    setProfile,
+    session,
+    setSession,
+    paymentMethods,
+    setPaymentMethods
+  };
   const Screen = ROUTES[route.name] || NotFound;
 
   return (
@@ -130,6 +152,7 @@ function ScreenFrame({ children, canBack, showTabs, onBack, onTab, activeRoot })
         <View style={styles.tabBar}>
           <Tab label="Home" active={activeRoot === "Home"} onPress={() => onTab("Home")} />
           <Tab label="Requests" active={activeRoot === "Requests"} onPress={() => onTab("Requests")} />
+          <Tab label="Billing" active={activeRoot === "Billing"} onPress={() => onTab("Billing")} />
           <Tab label="Profile" active={activeRoot === "Profile"} onPress={() => onTab("Profile")} />
         </View>
       ) : null}

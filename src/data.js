@@ -113,6 +113,31 @@ const ACTIVITY_ITEMS = {
   ]
 };
 
+// Billing seed data. Two values are deliberately hostile: INV-2405 has
+// amount: 0 and INV-2408 has status: "" - both exist to catch the
+// {value && <Text>} crash class ({invoice.amount && ...} renders a bare 0
+// outside <Text> and hard-crashes RN). Screens must branch with ?: or !!.
+const INVOICES = [
+  { id: "INV-2401", label: "April home cleaning", amount: 88, status: "Paid" },
+  { id: "INV-2402", label: "Plumber call-out", amount: 120, status: "Due" },
+  { id: "INV-2403", label: "Grocery run fee", amount: 12, status: "Paid" },
+  { id: "INV-2404", label: "Car service fee", amount: 45, status: "Overdue" },
+  { id: "INV-2405", label: "Welcome promo credit", amount: 0, status: "Applied" },
+  { id: "INV-2406", label: "March home cleaning", amount: 88, status: "Paid" },
+  { id: "INV-2407", label: "Errand batch", amount: 27.5, status: "Due" },
+  { id: "INV-2408", label: "Statement adjustment", amount: 16.2, status: "" },
+  { id: "INV-2409", label: "Gutter repair", amount: 210, status: "Due" },
+  { id: "INV-2410", label: "February home cleaning", amount: 88, status: "Paid" },
+  { id: "INV-2411", label: "Priority surcharge", amount: 9, status: "Due" },
+  { id: "INV-2412", label: "Car wash add-on", amount: 18, status: "Paid" }
+];
+
+// Visa 4421 matches the card ACTIVITY_ITEMS receipts already reference.
+const PAYMENT_METHODS = [
+  { id: "pm-visa-4421", brand: "Visa", last4: "4421", name: "Alex Morgan", expiry: "09/27" },
+  { id: "pm-mc-8810", brand: "Mastercard", last4: "8810", name: "Alex Morgan", expiry: "01/28" }
+];
+
 // ponytail: hardcoded guess for the Android system nav bar, carried over from
 // v1.0. A 4th tab tightens the tab bar and this is the knob that shifts.
 // Upgrade path: react-native-safe-area-context, if Expo already provides it.
@@ -423,6 +448,82 @@ const ROUTE_META = [
     trap: "Dead end - no top back button and no tab bar; Android hardware back backgrounds the app instead of navigating",
     escape: "Find and tap the in-content legal-close (calls nav.back) - it is the only exit",
     edges: []
+  },
+  {
+    name: "Billing",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["open-payment-methods"],
+    tab: "Billing",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "4th tab root - starts the app's deepest chain (Billing -> PaymentMethods -> AddCard and Billing -> PaymentReview -> PaymentResult); seeded INV-2405 has amount: 0 and INV-2408 has status: '' to exercise falsy-and rendering",
+    escape: "Reachable from tab-billing in the tab bar; tap any billing-invoice-{id} row to reach PaymentReview, or open-payment-methods to go deeper via cards",
+    edges: [
+      { to: "PaymentReview", requiresInput: false, gated: false, cycle: false },
+      { to: "PaymentMethods", requiresInput: false, gated: false, cycle: false }
+    ]
+  },
+  {
+    name: "PaymentMethods",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["add-card"],
+    tab: "Billing",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Depth - second level of the billing chain; add-card is the only edge deeper",
+    escape: "Reached via open-payment-methods on Billing; tap add-card to reach AddCard, nav-back returns to Billing",
+    edges: [{ to: "AddCard", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "AddCard",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["card-submit"],
+    tab: "Billing",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Format validation - card-submit stays disabled until src/validate.js cardValid passes on all four fields; non-empty garbage does not enable it",
+    escape: "Type 16 digits into card-number (spaces/dashes allowed), MM/YY with month 01-12 into card-expiry, exactly 3 digits into card-cvv, and any non-blank card-name; card-submit then enables and returns to PaymentMethods",
+    edges: [{ to: "PaymentMethods", requiresInput: true, gated: true, cycle: true }]
+  },
+  {
+    name: "PaymentReview",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["payment-pay"],
+    tab: "Billing",
+    instances: 12,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Branch point - the simulate-decline Switch decides which of PaymentResult's two terminal states payment-pay produces",
+    escape: "simulate-decline is reachable before paying; leave it off and tap payment-pay for success, flip it on and pay again for the declined state",
+    edges: [{ to: "PaymentResult", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "PaymentResult",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["payment-result"],
+    tab: "Billing",
+    instances: 24,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Two terminal states on one route - success renders payment-success + payment-done, declined renders payment-declined + payment-retry; only payment-result is present in both",
+    escape: "Reach both states by flipping simulate-decline on PaymentReview; payment-retry replaces back to PaymentReview, payment-done returns to the Billing root",
+    edges: [
+      { to: "PaymentReview", requiresInput: false, gated: false, cycle: true },
+      { to: "Billing", requiresInput: false, gated: false, cycle: false }
+    ]
   }
 ];
 
@@ -434,6 +535,8 @@ module.exports = {
   INITIAL_REQUESTS,
   ADDRESSES,
   ACTIVITY_ITEMS,
+  INVOICES,
+  PAYMENT_METHODS,
   ANDROID_NAV_BAR_GAP_ANDROID,
   TAB_BAR_HEIGHT,
   ROUTE_META

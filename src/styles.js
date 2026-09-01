@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     flexDirection: "row",
-    gap: 8,
+    gap: 6, // 8 -> 6 for the 4th tab: keeps "Requests" on one line at 13px on 320dp-wide devices
     backgroundColor: "#F7F5EF",
     borderTopColor: "#E2DED4",
     borderTopWidth: 1
