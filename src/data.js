@@ -117,6 +117,38 @@ const INITIAL_REQUESTS = [
 
 const ADDRESSES = ["Home - 24 Cedar Street", "Office - 9 Market Plaza", "Gym - 12 Lake Avenue"];
 
+// v1.1 expansion (Task 13): 37 generated requests appended AFTER the 3 v1.0
+// originals (REQ-1042, REQ-1038, REQ-0977 - Flows 2 and 3 target them by id,
+// so they stay verbatim and first). Deterministic index-based generator, and
+// every field references a seeded value (SERVICES / DATES / TIMES /
+// ADDRESSES / PRIORITIES) so the referential checks in scripts/data.test.js
+// hold. Statuses cycle Active/Completed/Canceled so every request is
+// reachable through the Requests filter. Active total = 2 originals + 13
+// generated (i % 3 === 0) = 15, which is the instance count for the
+// Active-gated Reschedule / EditRequest / EditRequestReview routes.
+const REQUEST_STATUSES = ["Active", "Completed", "Canceled"];
+const REQUEST_TIMELINES = {
+  Active: ["Booked", "Assigned"],
+  Completed: ["Booked", "Assigned", "Completed"],
+  Canceled: ["Booked", "Canceled"]
+};
+for (let i = 0; i < 37; i += 1) {
+  const service = SERVICES[i % SERVICES.length];
+  const status = REQUEST_STATUSES[i % 3];
+  INITIAL_REQUESTS.push({
+    id: `REQ-${2001 + i}`,
+    serviceId: service.id,
+    title: service.title,
+    status,
+    date: DATES[i % 4],
+    time: TIMES[(i * 3) % 4],
+    address: ADDRESSES[i % 3],
+    priority: PRIORITIES[(i * 2) % 3],
+    notes: `Seeded request ${i + 1} of 37 for ${service.title.toLowerCase()}.`,
+    timeline: [...REQUEST_TIMELINES[status]]
+  });
+}
+
 // Seed profile, extracted from App.js so DeleteAccount's resetAll has a
 // canonical object to reset to. Values are byte-identical to the v1.0 inline
 // initializer.
@@ -543,7 +575,8 @@ const ROUTE_META = [
     addressing: "exhaustive",
     anchors: ["request-detail"],
     tab: "Requests",
-    instances: 3,
+    // One instance per INITIAL_REQUESTS item (40 after the Task 13 expansion).
+    instances: 40,
     noBack: false,
     noTabs: false,
     terminal: false,
@@ -561,12 +594,14 @@ const ROUTE_META = [
     addressing: "exhaustive",
     anchors: ["reschedule-submit"],
     tab: "Requests",
-    instances: 2,
+    // One instance per ACTIVE request only (15 of 40) - reschedule-request
+    // renders on RequestDetail only while request.status is Active.
+    instances: 15,
     noBack: false,
     noTabs: false,
     terminal: false,
     trap: "Precondition-gated edge - reschedule-request renders on RequestDetail only while request.status is Active, so this route is invisible from Completed/Canceled requests",
-    escape: "Enter from an Active request (REQ-1042 or REQ-1038); Completed REQ-0977 legitimately has no reschedule-request control - the missing edge is correct, not a crawler gap",
+    escape: "Enter from an Active request (e.g. REQ-1042 or REQ-1038); Completed REQ-0977 legitimately has no reschedule-request control - the missing edge is correct, not a crawler gap",
     edges: [
       { to: "RequestDetail", requiresInput: false, gated: false, cycle: true },
       { to: "Home", requiresInput: false, gated: true, cycle: false }
@@ -578,7 +613,9 @@ const ROUTE_META = [
     addressing: "exhaustive",
     anchors: ["review-request-changes"],
     tab: "Requests",
-    instances: 2,
+    // One instance per ACTIVE request only (15 of 40) - edit-request renders
+    // on RequestDetail behind the same status gate as reschedule-request.
+    instances: 15,
     noBack: false,
     noTabs: false,
     terminal: false,
@@ -595,7 +632,8 @@ const ROUTE_META = [
     addressing: "exhaustive",
     anchors: ["save-request-changes"],
     tab: "Requests",
-    instances: 2,
+    // Follows EditRequest: one instance per ACTIVE request (15 of 40).
+    instances: 15,
     noBack: false,
     noTabs: false,
     terminal: false,

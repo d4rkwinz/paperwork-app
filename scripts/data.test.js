@@ -570,3 +570,43 @@ for (const name of ["ServiceDetail", "BookingForm"]) {
     `ROUTE_META.${name}.instances tracks SERVICES.length`
   );
 }
+
+assert.strictEqual(data.INITIAL_REQUESTS.length, 40, "40 seeded requests");
+
+// The 3 v1.0 request ids must survive - Flows 2 and 3 target them by id.
+for (const id of ["REQ-1042", "REQ-1038", "REQ-0977"]) {
+  assert.ok(data.INITIAL_REQUESTS.some((r) => r.id === id), `v1.0 request ${id} is preserved`);
+}
+
+// Every status must be one the Requests filter can show, or a request becomes
+// unreachable and the expected graph overcounts.
+const STATUSES = new Set(["Active", "Completed", "Canceled"]);
+for (const r of data.INITIAL_REQUESTS) {
+  assert.ok(STATUSES.has(r.status), `request ${r.id} status ${r.status} is filterable`);
+}
+
+// Tier A instance counts that track INITIAL_REQUESTS: RequestDetail is one
+// per request; Reschedule/EditRequest/EditRequestReview are one per ACTIVE
+// request only (their RequestDetail entry controls render behind
+// request.status === "Active").
+const activeCount = data.INITIAL_REQUESTS.filter((r) => r.status === "Active").length;
+assert.strictEqual(
+  ROUTE_META.find((entry) => entry.name === "RequestDetail").instances,
+  data.INITIAL_REQUESTS.length,
+  "ROUTE_META.RequestDetail.instances tracks INITIAL_REQUESTS.length"
+);
+for (const name of ["Reschedule", "EditRequest", "EditRequestReview"]) {
+  const meta = ROUTE_META.find((entry) => entry.name === name);
+  assert.strictEqual(
+    meta.instances,
+    activeCount,
+    `ROUTE_META.${name}.instances tracks the Active request count`
+  );
+}
+
+// Total param states, for the CRAWLER.md headline number.
+const states =
+  data.SERVICES.length + data.INITIAL_REQUESTS.length + data.DOCUMENTS.length +
+  data.INVOICES.length + data.NOTIFICATIONS.length + data.POLICIES.length +
+  data.PROVIDERS.length + data.REMINDERS.length;
+assert.ok(states >= 240 && states <= 260, `param states in the documented range: ${states}`);
