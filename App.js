@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BackHandler, Pressable, SafeAreaView, StatusBar, Text, View } from "react-native";
-import { ADDRESSES, INITIAL_REQUESTS, PAYMENT_METHODS } from "./src/data";
+import { INITIAL_PROFILE, INITIAL_REQUESTS, PAYMENT_METHODS } from "./src/data";
 import { NotFound, Tab } from "./src/ui";
 import styles from "./src/styles";
 import * as navcore from "./src/navcore";
@@ -18,7 +18,16 @@ import {
   RequestsScreen,
   RescheduleScreen
 } from "./src/screens/Requests";
-import { AddressesScreen, PreferencesScreen, ProfileScreen } from "./src/screens/Profile";
+import {
+  AddressesScreen,
+  DangerZoneScreen,
+  DeleteAccountScreen,
+  HelpCenterScreen,
+  PreferencesScreen,
+  ProfileScreen,
+  ReferralScreen,
+  SupportFaqScreen
+} from "./src/screens/Profile";
 import { ForgotPasswordScreen, LoginScreen, OnboardingScreen } from "./src/screens/Auth";
 import {
   ActivityScreen,
@@ -63,7 +72,12 @@ const ROUTES = {
   PaymentReview: PaymentReviewScreen,
   PaymentResult: PaymentResultScreen,
   Documents: DocumentsScreen,
-  DocumentDetail: DocumentDetailScreen
+  DocumentDetail: DocumentDetailScreen,
+  HelpCenter: HelpCenterScreen,
+  SupportFaq: SupportFaqScreen,
+  Referral: ReferralScreen,
+  DangerZone: DangerZoneScreen,
+  DeleteAccount: DeleteAccountScreen
 };
 
 const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding", "LegalTerms"]);
@@ -74,16 +88,7 @@ export default function App() {
   const [session, setSession] = useState({ signedIn: false, guest: false });
   const [requests, setRequests] = useState(INITIAL_REQUESTS);
   const [paymentMethods, setPaymentMethods] = useState(PAYMENT_METHODS);
-  const [profile, setProfile] = useState({
-    name: "Alex Morgan",
-    phone: "+1 555 014 2920",
-    email: "alex@example.com",
-    primaryAddress: ADDRESSES[0],
-    notifyPush: true,
-    notifyEmail: true,
-    notifySms: false,
-    quietHours: true
-  });
+  const [profile, setProfile] = useState(INITIAL_PROFILE);
 
   const route = stack[stack.length - 1];
 

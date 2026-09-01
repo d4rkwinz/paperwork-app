@@ -88,6 +88,30 @@ const INITIAL_REQUESTS = [
 
 const ADDRESSES = ["Home - 24 Cedar Street", "Office - 9 Market Plaza", "Gym - 12 Lake Avenue"];
 
+// Seed profile, extracted from App.js so DeleteAccount's resetAll has a
+// canonical object to reset to. Values are byte-identical to the v1.0 inline
+// initializer.
+const INITIAL_PROFILE = {
+  name: "Alex Morgan",
+  phone: "+1 555 014 2920",
+  email: "alex@example.com",
+  primaryAddress: ADDRESSES[0],
+  notifyPush: true,
+  notifyEmail: true,
+  notifySms: false,
+  quietHours: true
+};
+
+// HelpCenter and SupportFaq render this same list - the alias-pair trap
+// depends on the two routes sharing one data source so they can never drift.
+const HELP_TOPICS = [
+  "How do I reschedule a request?",
+  "Why was my card charged twice?",
+  "Can I change my primary address?",
+  "How do quiet hours affect alerts?",
+  "How do I cancel a booking?"
+];
+
 // ActivityScreen's segmented control swaps between these lists in-screen -
 // same route, three states. Keyed by segment label; ids are unique across
 // all three lists because they become testID suffixes (activity-item-{id}).
@@ -421,7 +445,10 @@ const ROUTE_META = [
     edges: [
       { to: "Addresses", requiresInput: false, gated: false, cycle: false },
       { to: "Preferences", requiresInput: false, gated: false, cycle: false },
-      { to: "SupportChat", requiresInput: false, gated: false, cycle: false }
+      { to: "SupportChat", requiresInput: false, gated: false, cycle: false },
+      { to: "HelpCenter", requiresInput: false, gated: false, cycle: false },
+      { to: "Referral", requiresInput: false, gated: false, cycle: true },
+      { to: "DangerZone", requiresInput: false, gated: false, cycle: false }
     ]
   },
   {
@@ -436,7 +463,10 @@ const ROUTE_META = [
     terminal: false,
     trap: null,
     escape: null,
-    edges: [{ to: "LegalTerms", requiresInput: false, gated: false, cycle: false }]
+    edges: [
+      { to: "LegalTerms", requiresInput: false, gated: false, cycle: false },
+      { to: "SupportFaq", requiresInput: false, gated: false, cycle: false }
+    ]
   },
   {
     name: "Addresses",
@@ -618,6 +648,76 @@ const ROUTE_META = [
       { to: "Documents", requiresInput: false, gated: false, cycle: true },
       { to: "Home", requiresInput: false, gated: true, cycle: false }
     ]
+  },
+  {
+    name: "HelpCenter",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["help-contact"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Alias A - renders byte-identical output (heading, body, HELP_TOPICS list, testIDs) to SupportFaq from the same shared component; only the route name and entry point differ",
+    escape: "Record 2 distinct nodes keyed by route, not by rendered content - a crawler that dedups on screen hash merges this with SupportFaq and reports 1 where the truth is 2",
+    edges: [{ to: "SupportChat", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "SupportFaq",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["help-contact"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Alias B - byte-identical rendered output and testIDs to HelpCenter; reached from Preferences (open-faq) instead of Profile (open-help)",
+    escape: "Record 2 distinct nodes keyed by route, not by rendered content - identical appearance, distinct route",
+    edges: [{ to: "SupportChat", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "Referral",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["referral-code"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Cycle - referral-open-profile pushes Profile, and Profile's open-referral pushes Referral, so the stack can grow Referral -> Profile -> Referral forever",
+    escape: "Detect the loop by route identity and stop re-expanding visited routes; do not recurse indefinitely",
+    edges: [{ to: "Profile", requiresInput: false, gated: false, cycle: true }]
+  },
+  {
+    name: "DangerZone",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["danger-warning"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Destructive path entry - open-delete-account leads one hop deeper to the typed-confirmation reset",
+    escape: "The screen itself is safe; the destructive action lives on DeleteAccount and requires typing the exact literal DELETE",
+    edges: [{ to: "DeleteAccount", requiresInput: false, gated: false, cycle: false }]
+  },
+  {
+    name: "DeleteAccount",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["delete-submit"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Self-destruction - delete-submit resets requests, profile, paymentMethods, and session to seed and roots the stack at Login; it stays disabled until confirmsDelete passes on the exact literal DELETE (trimmed, case-sensitive - lowercase delete does not enable it)",
+    escape: "Recover after the reset: the app lands on Login with seed data restored; any stale param id pushed afterwards must hit the NotFound guards, not a crash",
+    edges: [{ to: "Login", requiresInput: true, gated: true, cycle: false }]
   }
 ];
 
@@ -628,6 +728,8 @@ module.exports = {
   PRIORITIES,
   INITIAL_REQUESTS,
   ADDRESSES,
+  INITIAL_PROFILE,
+  HELP_TOPICS,
   ACTIVITY_ITEMS,
   INVOICES,
   DOCUMENTS,
