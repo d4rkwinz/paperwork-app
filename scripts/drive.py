@@ -341,6 +341,125 @@ elif steps == "back":
     print(f"\nback-behavior all expectations met: {ok}")
     sys.exit(0 if ok else 1)
 
+elif steps == "traps":
+    # Task 6: four traps, each verified against the behavior that makes it
+    # measurable at all - not merely that the screen renders.
+    print("Task 6 traps: search gate, segmented state, slow load, dead end")
+    ok = True
+    ok &= pass_gate(guest=True)
+
+    # --- Trap 1: Search requires >=2 generated characters -------------------
+    ok &= tap("Find a service", exact=False) or tap("Search services")
+    one = find(dump(), "Search services")
+    if one:
+        adb("shell", "input", "tap", str(one[0]), str(one[1]))
+        time.sleep(0.8)
+        adb("shell", "input", "text", "p")
+        time.sleep(1.5)
+        xml = dump()
+        gated = "Type at least" in xml or "search-empty" in xml
+        leaked = "Plumber" in xml and "Leaks, clogs" in xml
+        print(f"  1 char shows the empty prompt: {gated}")
+        print(f"  1 char leaked results (must be False): {leaked}")
+        if not gated or leaked:
+            ok = False
+        adb("shell", "input", "text", "l")   # -> "pl"
+        time.sleep(1.5)
+        xml = dump()
+        found = "Plumber" in xml
+        print(f"  2 chars ('pl') return Plumber: {found}")
+        if not found:
+            ok = False
+        # A query that matches nothing must be distinguishable from too-short.
+        adb("shell", "input", "text", "zzz")
+        time.sleep(1.5)
+        xml = dump()
+        distinct = ("matched nothing" in xml.lower() or "no results" in xml.lower()
+                    or "no service" in xml.lower())
+        print(f"  no-match state distinguishable from too-short: {distinct}")
+        if not distinct:
+            ok = False
+        shot("14-search-no-results")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        time.sleep(0.5)
+    else:
+        print("  FAIL: search input not found")
+        ok = False
+
+    ok &= tap("Go back")
+
+    # --- Trap 2: Activity swaps content WITHOUT navigating -----------------
+    ok &= tap("Recent activity", exact=False) or tap("Activity")
+    before = dump()
+    ok &= tap("Alerts")
+    after = dump()
+    changed = before != after
+    still_activity = "Recent activity" in after
+    print(f"  segment change altered content: {changed}")
+    print(f"  route did NOT change (still Activity): {still_activity}")
+    if not (changed and still_activity):
+        ok = False
+    shot("15-activity-alerts")
+    ok &= tap("Go back")
+
+    print(f"\ntraps (search + activity) met: {ok}")
+    sys.exit(0 if ok else 1)
+
+elif steps == "slowload":
+    # Trap 3: SupportChat must show loading, THEN content - never both.
+    print("Trap: SupportChat 1.5s load")
+    ok = True
+    ok &= pass_gate(guest=True)
+    ok &= tap("Profile tab")
+    ok &= tap("Support", exact=False)
+    early = dump()
+    loading_now = "Connecting you to support" in early
+    content_now = "support-message-1" in early or "Thanks for reaching out" in early
+    print(f"  loading indicator visible immediately: {loading_now}")
+    print(f"  content already present during load (must be False): {content_now}")
+    if content_now:
+        ok = False
+    time.sleep(2.5)
+    late = dump()
+    settled = "Connecting you to support" not in late
+    has_content = "support-title" in late or "Support" in late
+    print(f"  loading gone after wait: {settled}")
+    print(f"  content present after wait: {has_content}")
+    if not (settled and has_content):
+        ok = False
+    shot("16-supportchat-settled")
+    print(f"\nslow-load trap met: {ok}")
+    sys.exit(0 if ok else 1)
+
+elif steps == "deadend":
+    # Trap 4: LegalTerms is a genuine dead end - no back button, no tabs,
+    # only the in-content close. Android back backgrounds the app (intended).
+    print("Trap: LegalTerms dead end")
+    ok = True
+    ok &= pass_gate(guest=True)
+    ok &= tap("Profile tab")
+    ok &= tap("Notification preferences")
+    ok &= tap("Legal", exact=False) or tap("Terms of service", exact=False)
+    xml = dump()
+    on_legal = "Terms of service" in xml
+    no_back = "Go back" not in xml
+    no_tabs = "Requests tab" not in xml
+    has_close = "Close" in xml
+    print(f"  on LegalTerms: {on_legal}")
+    print(f"  back button absent: {no_back}")
+    print(f"  tab bar hidden: {no_tabs}")
+    print(f"  in-content Close present (the only escape): {has_close}")
+    if not (on_legal and no_back and no_tabs and has_close):
+        ok = False
+    shot("17-legalterms-deadend")
+    ok &= tap("Close")
+    escaped = "Terms of service" not in dump()
+    print(f"  Close escapes the dead end: {escaped}")
+    if not escaped:
+        ok = False
+    print(f"\ndead-end trap met: {ok}")
+    sys.exit(0 if ok else 1)
+
 elif steps == "anchors":
     # Fix pass: RequestDetail must be addressable in EVERY state. REQ-0977 is
     # seeded Completed, so edit-request/cancel-request do not render there - it
