@@ -181,6 +181,139 @@ const PAYMENT_METHODS = [
   { id: "pm-mc-8810", brand: "Mastercard", last4: "8810", name: "Alex Morgan", expiry: "01/28" }
 ];
 
+// ---------------------------------------------------------------------------
+// Tier B seed collections (Task 12). Every generator is a pure function of
+// its loop index over fixed lookup tables - no Math.random(), no Date - so
+// the collections (and the crawler ground-truth graph built from them) are
+// byte-identical across runs. Items are keyed by a unique `id` (the BULK
+// contract below).
+
+// 8 of the 25 notifications carry a deepLink { route, params } into OTHER
+// clusters (requests, billing, insurance, documents). NotificationDetail
+// renders an accessibilityLabel-only "Open linked item" action for them -
+// the cross-cutting edges that turn the route tree into a graph. Indices are
+// chosen so each link's kind matches its notification kind (kinds cycle
+// i % 5). Every param value below must resolve in the target's collection;
+// scripts/data.test.js enforces this.
+const NOTIFICATION_KINDS = ["Request update", "Invoice", "Insurance", "Document", "System"];
+const NOTIFICATION_TITLES = [
+  "Update on your request",
+  "An invoice needs attention",
+  "Policy notice",
+  "New document available",
+  "Service notice"
+];
+const NOTIFICATION_BODIES = [
+  "There is fresh activity on one of your service requests.",
+  "An invoice on your account is awaiting payment.",
+  "One of your insurance policies has an update worth reviewing.",
+  "A new document was added to your files.",
+  "A general update about your Paperwork account."
+];
+const NOTIFICATION_LINKS = {
+  0: { route: "RequestDetail", params: { requestId: "REQ-1042" } },
+  5: { route: "RequestDetail", params: { requestId: "REQ-1038" } },
+  1: { route: "PaymentReview", params: { invoiceId: "INV-2402" } },
+  6: { route: "PaymentReview", params: { invoiceId: "INV-2404" } },
+  2: { route: "PolicyDetail", params: { policyId: "POL-01" } },
+  7: { route: "PolicyDetail", params: { policyId: "POL-04" } },
+  3: { route: "DocumentDetail", params: { docId: "DOC-1002" } },
+  8: { route: "DocumentDetail", params: { docId: "DOC-1017" } }
+};
+const NOTIFICATIONS = [];
+for (let i = 0; i < 25; i += 1) {
+  NOTIFICATIONS.push({
+    id: `NTF-${String(i + 1).padStart(2, "0")}`,
+    kind: NOTIFICATION_KINDS[i % 5],
+    title: `${NOTIFICATION_TITLES[i % 5]} #${i + 1}`,
+    body: NOTIFICATION_BODIES[i % 5],
+    when: `Apr ${1 + (i % 28)}, ${TIMES[i % 4]}`,
+    ...(NOTIFICATION_LINKS[i] ? { deepLink: NOTIFICATION_LINKS[i] } : {})
+  });
+}
+
+const POLICIES = [
+  { id: "POL-01", name: "Home shield", type: "Homeowners", premium: "$42/mo", renewal: "Jul 1, 2026", status: "Active", coverage: "$250,000 dwelling" },
+  { id: "POL-02", name: "Auto basic", type: "Auto", premium: "$61/mo", renewal: "Sep 12, 2026", status: "Active", coverage: "$50,000 liability" },
+  { id: "POL-03", name: "Renters plus", type: "Renters", premium: "$14/mo", renewal: "Feb 3, 2027", status: "Active", coverage: "$30,000 contents" },
+  { id: "POL-04", name: "Travel annual", type: "Travel", premium: "$9/mo", renewal: "May 20, 2026", status: "Lapsed", coverage: "$10,000 medical" },
+  { id: "POL-05", name: "Device care", type: "Electronics", premium: "$7/mo", renewal: "Nov 8, 2026", status: "Active", coverage: "$4,000 replacement" },
+  { id: "POL-06", name: "Pet health", type: "Pet", premium: "$23/mo", renewal: "Aug 15, 2026", status: "Active", coverage: "$8,000 annual vet" }
+];
+
+// (i % 10, i % 6) name pairs are unique across 30 items (lcm(10, 6) = 30).
+const PROVIDER_FIRST = ["Sam", "Riley", "Jordan", "Casey", "Morgan", "Avery", "Quinn", "Taylor", "Jamie", "Drew"];
+const PROVIDER_LAST = ["Alvarez", "Chen", "Okafor", "Novak", "Reyes", "Kim"];
+const PROVIDER_SPECIALTIES = ["Plumbing", "Cleaning", "Electrical", "Landscaping", "Auto repair", "Handyman"];
+const PROVIDER_CITIES = ["Riverton", "Lakeside", "Mapleton", "Fairview", "Kingsport"];
+const PROVIDERS = [];
+for (let i = 0; i < 30; i += 1) {
+  PROVIDERS.push({
+    id: `PRV-${1001 + i}`,
+    name: `${PROVIDER_FIRST[i % 10]} ${PROVIDER_LAST[i % 6]}`,
+    specialty: PROVIDER_SPECIALTIES[i % 6],
+    rating: `${(3 + ((i * 7) % 20) / 10).toFixed(1)} stars`,
+    city: PROVIDER_CITIES[i % 5],
+    phone: `+1 555 0${200 + i}`
+  });
+}
+
+const REMINDER_DAY_LABELS = [
+  "Mon Apr 21", "Tue Apr 22", "Wed Apr 23", "Thu Apr 24", "Fri Apr 25",
+  "Sat Apr 26", "Sun Apr 27", "Mon Apr 28", "Tue Apr 29"
+];
+const REMINDER_TASKS = ["Renew insurance", "Pay invoice", "File warranty claim", "Confirm cleaning", "Water plants"];
+const RECURRENCE_LABELS = ["None", "Daily", "Weekly", "Monthly"];
+const REMINDERS = [];
+for (let i = 0; i < 45; i += 1) {
+  REMINDERS.push({
+    id: `REM-${1001 + i}`,
+    title: `${REMINDER_TASKS[i % 5]} #${i + 1}`,
+    day: REMINDER_DAY_LABELS[i % 9],
+    time: TIMES[i % 4],
+    recurrence: RECURRENCE_LABELS[i % 4],
+    note: `Reminder ${i + 1} of 45, from the deterministic seed generator.`
+  });
+}
+
+// Month view rows: one per distinct day (45 / 9 = 5 reminders each).
+const REMINDER_DAYS = REMINDER_DAY_LABELS.map((day, index) => ({
+  id: `DAY-${index + 1}`,
+  day,
+  count: REMINDERS.filter((reminder) => reminder.day === day).length
+}));
+
+const RECURRENCES = [
+  { id: "none", label: "None", description: "Fires once, then clears" },
+  { id: "daily", label: "Daily", description: "Every day at the set time" },
+  { id: "weekly", label: "Weekly", description: "Same weekday each week" },
+  { id: "monthly", label: "Monthly", description: "Same date each month" }
+];
+
+const MESSAGES = [
+  { id: "MSG-01", from: "You", sent: "Apr 18, 9:12 AM", body: "Hi - are you available Tuesday morning?" },
+  { id: "MSG-02", from: "Provider", sent: "Apr 18, 9:40 AM", body: "Tuesday works. Does 10:30 AM suit you?" },
+  { id: "MSG-03", from: "You", sent: "Apr 18, 9:52 AM", body: "10:30 is perfect. The gate code is 4421." },
+  { id: "MSG-04", from: "Provider", sent: "Apr 18, 10:05 AM", body: "Got it. I will bring the replacement fittings." },
+  { id: "MSG-05", from: "You", sent: "Apr 19, 8:15 AM", body: "Quick note - please park in the visitor spot." },
+  { id: "MSG-06", from: "Provider", sent: "Apr 19, 8:20 AM", body: "Will do. See you Tuesday at 10:30 AM." }
+];
+
+// Security hub rows: each row links to a DIFFERENT route, so this list uses
+// the linkField shape (every item MUST carry `link`, or the row has nowhere
+// to go - scripts/data.test.js enforces this).
+const SECURITY_ITEMS = [
+  { id: "password", title: "Change password", sub: "Last changed 90 days ago", link: { route: "ChangePassword" } },
+  { id: "twofactor", title: "Two-factor authentication", sub: "Off - set up an authenticator", link: { route: "TwoFactorSetup", params: { step: 1 } } },
+  { id: "export", title: "Export your data", sub: "Download everything as an archive", link: { route: "DataExport", params: { exportId: "EXP-01" } } }
+];
+
+// Single seeded export: DataExport and ExportStatus are 1-instance details
+// over the same item.
+const EXPORTS = [
+  { id: "EXP-01", label: "Account data export", format: "ZIP archive", size: "2.4 MB", requested: "Apr 20, 9:00 AM", status: "Ready to download" }
+];
+
 // ponytail: hardcoded guess for the Android system nav bar, carried over from
 // v1.0. A 4th tab tightens the tab bar and this is the knob that shifts.
 // Upgrade path: react-native-safe-area-context, if Expo already provides it.
@@ -359,7 +492,9 @@ const ROUTE_META = [
     terminal: false,
     trap: "Overlay state that is not a route - the filter lives in a bottom-sheet Modal, so request-filter-* options exist only while the sheet is open, and opening/closing it changes screen state, never the route",
     escape: "Tap open-filter-sheet, then tap a request-filter-{value} option (applies the filter and closes the sheet); close-filter-sheet or Android hardware back dismisses without changing the filter",
-    edges: [{ to: "RequestDetail", requiresInput: false, gated: false, cycle: false }]
+    edges: [
+      { to: "RequestDetail", requiresInput: false, gated: false, cycle: false }
+    ]
   },
   {
     name: "RequestDetail",
@@ -770,6 +905,15 @@ module.exports = {
   DOCUMENTS,
   DOCS_PAGE_SIZE,
   PAYMENT_METHODS,
+  NOTIFICATIONS,
+  POLICIES,
+  PROVIDERS,
+  REMINDERS,
+  REMINDER_DAYS,
+  RECURRENCES,
+  MESSAGES,
+  SECURITY_ITEMS,
+  EXPORTS,
   ANDROID_NAV_BAR_GAP_ANDROID,
   TAB_BAR_HEIGHT,
   ROUTE_META,
