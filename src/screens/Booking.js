@@ -12,6 +12,32 @@ export function HomeScreen({ nav, params, app }) {
         <Text style={styles.h1}>What needs handling?</Text>
         <Text style={styles.bodyText}>Book common services, track active errands, and update details in one place.</Text>
       </View>
+      <Pressable
+        testID="open-search"
+        accessibilityRole="button"
+        accessibilityLabel="Search services"
+        onPress={() => nav.push("Search")}
+        style={styles.settingRow}
+      >
+        <View>
+          <Text style={styles.cardTitle}>Search services</Text>
+          <Text style={styles.cardBody}>Find a service by name or category</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
+      <Pressable
+        testID="open-activity"
+        accessibilityRole="button"
+        accessibilityLabel="Recent activity"
+        onPress={() => nav.push("Activity")}
+        style={styles.settingRow}
+      >
+        <View>
+          <Text style={styles.cardTitle}>Recent activity</Text>
+          <Text style={styles.cardBody}>Bookings, alerts, and receipts</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
       <Text style={styles.sectionTitle}>Services</Text>
       <View style={styles.cardGrid}>
         {SERVICES.map((service) => (

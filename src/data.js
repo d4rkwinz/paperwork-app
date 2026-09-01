@@ -88,6 +88,31 @@ const INITIAL_REQUESTS = [
 
 const ADDRESSES = ["Home - 24 Cedar Street", "Office - 9 Market Plaza", "Gym - 12 Lake Avenue"];
 
+// ActivityScreen's segmented control swaps between these lists in-screen -
+// same route, three states. Keyed by segment label; ids are unique across
+// all three lists because they become testID suffixes (activity-item-{id}).
+const ACTIVITY_ITEMS = {
+  All: [
+    { id: "evt-01", kind: "Booking", text: "REQ-1042 Home cleaning confirmed for tomorrow 10:30 AM" },
+    { id: "evt-02", kind: "Alert", text: "Shopper is waiting on a substitution answer for REQ-1038" },
+    { id: "evt-03", kind: "Receipt", text: "REQ-0977 Car service - $45 fee charged to Visa 4421" },
+    { id: "evt-04", kind: "Update", text: "Cleaning team assigned to REQ-1042" },
+    { id: "evt-05", kind: "Profile", text: "Primary address set to Home - 24 Cedar Street" }
+  ],
+  Alerts: [
+    { id: "alr-01", kind: "Alert", text: "Shopper is waiting on a substitution answer for REQ-1038" },
+    { id: "alr-02", kind: "Alert", text: "REQ-1042 team arrives in a 30-minute window tomorrow" },
+    { id: "alr-03", kind: "Alert", text: "Quiet hours held 2 notifications overnight" },
+    { id: "alr-04", kind: "Alert", text: "Priority on REQ-1038 was raised to High" }
+  ],
+  Receipts: [
+    { id: "rcp-01", kind: "Receipt", text: "REQ-0977 Car service - $45 fee charged to Visa 4421" },
+    { id: "rcp-02", kind: "Receipt", text: "REQ-0951 Grocery run - $12 fee + $84.20 items" },
+    { id: "rcp-03", kind: "Receipt", text: "REQ-0902 Home cleaning - $88 charged to Visa 4421" },
+    { id: "rcp-04", kind: "Receipt", text: "REQ-0877 Plumber - $120 charged to Visa 4421" }
+  ]
+};
+
 // ponytail: hardcoded guess for the Android system nav bar, carried over from
 // v1.0. A 4th tab tightens the tab bar and this is the knob that shifts.
 // Upgrade path: react-native-safe-area-context, if Expo already provides it.
@@ -158,7 +183,11 @@ const ROUTE_META = [
     terminal: false,
     trap: null,
     escape: null,
-    edges: [{ to: "ServiceDetail", requiresInput: false, gated: false, cycle: false }]
+    edges: [
+      { to: "ServiceDetail", requiresInput: false, gated: false, cycle: false },
+      { to: "Search", requiresInput: false, gated: false, cycle: false },
+      { to: "Activity", requiresInput: false, gated: false, cycle: false }
+    ]
   },
   {
     name: "ServiceDetail",
@@ -307,7 +336,8 @@ const ROUTE_META = [
     escape: null,
     edges: [
       { to: "Addresses", requiresInput: false, gated: false, cycle: false },
-      { to: "Preferences", requiresInput: false, gated: false, cycle: false }
+      { to: "Preferences", requiresInput: false, gated: false, cycle: false },
+      { to: "SupportChat", requiresInput: false, gated: false, cycle: false }
     ]
   },
   {
@@ -319,10 +349,10 @@ const ROUTE_META = [
     instances: 1,
     noBack: false,
     noTabs: false,
-    terminal: true,
+    terminal: false,
     trap: null,
     escape: null,
-    edges: []
+    edges: [{ to: "LegalTerms", requiresInput: false, gated: false, cycle: false }]
   },
   {
     name: "Addresses",
@@ -337,6 +367,62 @@ const ROUTE_META = [
     trap: null,
     escape: null,
     edges: []
+  },
+  {
+    name: "Search",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["search-input"],
+    tab: "Home",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: false,
+    trap: "Requires generated input - results render only when the trimmed query is >= 2 chars, so a crawler that never types sees 0 new edges",
+    escape: "Type at least 2 characters into search-input (e.g. \"pl\" matches Plumber); a single character still shows search-empty; tap a search-result-{serviceId} row to reach ServiceDetail",
+    edges: [{ to: "ServiceDetail", requiresInput: true, gated: false, cycle: false }]
+  },
+  {
+    name: "Activity",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["activity-seg-all"],
+    tab: "Home",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: true,
+    trap: "In-screen state vs navigation - three segments swap the list content while the route never changes",
+    escape: "Tap activity-seg-all, activity-seg-alerts, activity-seg-receipts and record 3 states for 1 route - not 3 routes, and not 1 state",
+    edges: []
+  },
+  {
+    name: "SupportChat",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["support-title"],
+    tab: "Profile",
+    instances: 1,
+    noBack: false,
+    noTabs: false,
+    terminal: true,
+    trap: "Slow load - support-loading renders for 1500ms after every mount (screens remount per push, so the delay replays on every visit) before support-message-{n} and support-reply appear",
+    escape: "Poll until support-loading is gone before snapshotting - settled content appears ~1.5s after entry",
+    edges: []
+  },
+  {
+    name: "LegalTerms",
+    tier: "A",
+    addressing: "exhaustive",
+    anchors: ["legal-close"],
+    tab: null,
+    instances: 1,
+    noBack: true,
+    noTabs: true,
+    terminal: true,
+    trap: "Dead end - no top back button and no tab bar; Android hardware back backgrounds the app instead of navigating",
+    escape: "Find and tap the in-content legal-close (calls nav.back) - it is the only exit",
+    edges: []
   }
 ];
 
@@ -347,6 +433,7 @@ module.exports = {
   PRIORITIES,
   INITIAL_REQUESTS,
   ADDRESSES,
+  ACTIVITY_ITEMS,
   ANDROID_NAV_BAR_GAP_ANDROID,
   TAB_BAR_HEIGHT,
   ROUTE_META

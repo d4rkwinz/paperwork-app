@@ -19,6 +19,12 @@ import {
 } from "./src/screens/Requests";
 import { AddressesScreen, PreferencesScreen, ProfileScreen } from "./src/screens/Profile";
 import { ForgotPasswordScreen, LoginScreen, OnboardingScreen } from "./src/screens/Auth";
+import {
+  ActivityScreen,
+  LegalTermsScreen,
+  SearchScreen,
+  SupportChatScreen
+} from "./src/screens/Misc";
 
 const ROUTES = {
   Login: LoginScreen,
@@ -35,11 +41,15 @@ const ROUTES = {
   EditRequestReview: EditRequestReviewScreen,
   Profile: ProfileScreen,
   Preferences: PreferencesScreen,
-  Addresses: AddressesScreen
+  Addresses: AddressesScreen,
+  Search: SearchScreen,
+  Activity: ActivityScreen,
+  SupportChat: SupportChatScreen,
+  LegalTerms: LegalTermsScreen
 };
 
-const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding"]);
-const NO_BACK = new Set(["Login"]);
+const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding", "LegalTerms"]);
+const NO_BACK = new Set(["Login", "LegalTerms"]);
 
 export default function App() {
   const [stack, setStack] = useState(() => navcore.root("Login"));

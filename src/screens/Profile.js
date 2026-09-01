@@ -48,6 +48,13 @@ export function ProfileScreen({ nav, params, app }) {
         </View>
         <Text style={styles.chevron}>{">"}</Text>
       </Pressable>
+      <Pressable testID="open-support" accessibilityRole="button" accessibilityLabel="Chat with support" onPress={() => nav.push("SupportChat")} style={styles.settingRow}>
+        <View>
+          <Text style={styles.cardTitle}>Support chat</Text>
+          <Text style={styles.cardBody}>Questions about a booking or charge</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -66,6 +73,13 @@ export function PreferencesScreen({ nav, params, app }) {
         <Text style={styles.panelTitle}>Current delivery</Text>
         <Text style={styles.bodyText}>{notificationSummary(profile)}</Text>
       </View>
+      <Pressable testID="open-legal" accessibilityRole="button" accessibilityLabel="Terms of service" onPress={() => nav.push("LegalTerms")} style={styles.settingRow}>
+        <View>
+          <Text style={styles.cardTitle}>Terms of service</Text>
+          <Text style={styles.cardBody}>Bookings, cancellation, and notifications</Text>
+        </View>
+        <Text style={styles.chevron}>{">"}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
