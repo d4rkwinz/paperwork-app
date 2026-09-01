@@ -44,6 +44,30 @@ import {
   PaymentResultScreen,
   PaymentReviewScreen
 } from "./src/screens/Billing";
+import {
+  ChangePasswordScreen,
+  ClaimStartScreen,
+  ClaimSubmittedScreen,
+  ClaimWizardScreen,
+  ComposeMessageScreen,
+  CreateReminderScreen,
+  DataExportScreen,
+  DirectoryScreen,
+  ExportStatusScreen,
+  InboxScreen,
+  MessageThreadScreen,
+  NotificationDetailScreen,
+  NotificationSettingsScreen,
+  PoliciesScreen,
+  PolicyDetailScreen,
+  ProviderDetailScreen,
+  RecurrencePickerScreen,
+  ReminderDetailScreen,
+  RemindersDayScreen,
+  RemindersMonthScreen,
+  SecurityScreen,
+  TwoFactorSetupScreen
+} from "./src/screens/Bulk";
 
 const ROUTES = {
   Login: LoginScreen,
@@ -77,7 +101,29 @@ const ROUTES = {
   SupportFaq: SupportFaqScreen,
   Referral: ReferralScreen,
   DangerZone: DangerZoneScreen,
-  DeleteAccount: DeleteAccountScreen
+  DeleteAccount: DeleteAccountScreen,
+  Inbox: InboxScreen,
+  NotificationDetail: NotificationDetailScreen,
+  NotificationSettings: NotificationSettingsScreen,
+  Policies: PoliciesScreen,
+  PolicyDetail: PolicyDetailScreen,
+  ClaimStart: ClaimStartScreen,
+  ClaimWizard: ClaimWizardScreen,
+  ClaimSubmitted: ClaimSubmittedScreen,
+  Directory: DirectoryScreen,
+  ProviderDetail: ProviderDetailScreen,
+  MessageThread: MessageThreadScreen,
+  ComposeMessage: ComposeMessageScreen,
+  RemindersMonth: RemindersMonthScreen,
+  RemindersDay: RemindersDayScreen,
+  ReminderDetail: ReminderDetailScreen,
+  RecurrencePicker: RecurrencePickerScreen,
+  CreateReminder: CreateReminderScreen,
+  Security: SecurityScreen,
+  ChangePassword: ChangePasswordScreen,
+  TwoFactorSetup: TwoFactorSetupScreen,
+  DataExport: DataExportScreen,
+  ExportStatus: ExportStatusScreen
 };
 
 const NO_TABS = new Set(["Login", "ForgotPassword", "Onboarding", "LegalTerms"]);

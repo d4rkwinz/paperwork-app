@@ -28,6 +28,27 @@ import styles from "../styles";
 // (from cfg), so scripts/data.test.js's literal string-target nav scan has
 // nothing to match in this file; Tier B edges are declared from BULK.
 //
+// Four deliberate cfg extensions beyond the original Task 11 contract, each
+// added for one Task 12 scenario (all optional; absent keys change nothing):
+//   list.linkField   - rows navigate to item[linkField].route with
+//                      item[linkField].params instead of itemRoute/itemParam.
+//                      Lets one list fan out to different routes per row
+//                      (Security's hub rows).
+//   list.filter      - (item, params) => bool; filters the collection per
+//                      instance (RemindersDay shows only its day's
+//                      reminders). Must be pure and total: return true on
+//                      missing/unknown params so the anchor list still
+//                      renders in every reachable state.
+//   detail.deepLinkField / deepLinkLabel - when item[deepLinkField] is a
+//                      { route, params } object, render one extra
+//                      SecondaryButton (accessibilityLabel only) that pushes
+//                      it. Carries NotificationDetail's cross-cluster deep
+//                      links; instances without the field render no button.
+//   form/wizard.nextParams - static params object passed on the FINAL
+//                      nav.push(cfg.nextRoute). Without it a form/wizard can
+//                      only exit to routes that need no params; ClaimWizard
+//                      uses it to land on the seeded CLM-01 claim receipt.
+//
 // All conditionals use ?: or !! (never {value && ...}): Tier B data
 // includes numeric fields, and a falsy-and renders a bare 0 outside <Text>,
 // which hard-crashes React Native.
@@ -61,6 +82,9 @@ function requiredComplete(fields, values) {
 }
 
 export function ListScreen({ nav, params, app, cfg }) {
+  const items = cfg.filter
+    ? DATA[cfg.collection].filter((item) => cfg.filter(item, params))
+    : DATA[cfg.collection];
   return (
     <ScrollView
       testID={`${cfg.testPrefix}-list`}
@@ -69,12 +93,16 @@ export function ListScreen({ nav, params, app, cfg }) {
     >
       <Text style={styles.kicker}>{cfg.title}</Text>
       <Text style={styles.h1}>{cfg.heading}</Text>
-      {DATA[cfg.collection].map((item) => (
+      {items.map((item) => (
         <Pressable
           key={String(item.id)}
           accessibilityRole="button"
           accessibilityLabel={String(cfg.itemLabel(item))}
-          onPress={() => nav.push(cfg.itemRoute, { [cfg.itemParam]: item.id })}
+          onPress={() =>
+            cfg.linkField
+              ? nav.push(item[cfg.linkField].route, item[cfg.linkField].params)
+              : nav.push(cfg.itemRoute, { [cfg.itemParam]: item.id })
+          }
           style={styles.requestCard}
         >
           <View>
@@ -118,6 +146,14 @@ export function DetailScreen({ nav, params, app, cfg }) {
           />
         )
       )}
+      {cfg.deepLinkField && item[cfg.deepLinkField] ? (
+        <SecondaryButton
+          label={cfg.deepLinkLabel}
+          onPress={() =>
+            nav.push(item[cfg.deepLinkField].route, item[cfg.deepLinkField].params)
+          }
+        />
+      ) : null}
     </ScrollView>
   );
 }
@@ -136,7 +172,7 @@ export function FormScreen({ nav, params, app, cfg }) {
         label={cfg.submitLabel}
         testID={`${cfg.testPrefix}-primary`}
         disabled={!complete}
-        onPress={() => nav.push(cfg.nextRoute)}
+        onPress={() => nav.push(cfg.nextRoute, cfg.nextParams)}
       />
     </ScrollView>
   );
@@ -166,7 +202,9 @@ export function WizardScreen({ nav, params, app, cfg }) {
       <PrimaryButton
         label={last ? cfg.submitLabel : "Next"}
         testID={`${cfg.testPrefix}-primary`}
-        onPress={() => (last ? nav.push(cfg.nextRoute) : nav.push(cfg.route, { step: step + 1 }))}
+        onPress={() =>
+          last ? nav.push(cfg.nextRoute, cfg.nextParams) : nav.push(cfg.route, { step: step + 1 })
+        }
       />
     </ScrollView>
   );

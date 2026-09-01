@@ -314,6 +314,14 @@ const EXPORTS = [
   { id: "EXP-01", label: "Account data export", format: "ZIP archive", size: "2.4 MB", requested: "Apr 20, 9:00 AM", status: "Ready to download" }
 ];
 
+// Single seeded claim receipt: ClaimWizard's finish always lands on CLM-01
+// via BULK.ClaimWizard.nextParams (the wizard drops policyId on step
+// advance, so the receipt cannot vary per policy - a static seeded receipt
+// keeps the chain deterministic instead).
+const CLAIMS = [
+  { id: "CLM-01", label: "Claim CLM-01 received", policy: "Home shield", status: "Received", filed: "Apr 21, 9:30 AM", eta: "3-5 business days" }
+];
+
 // ponytail: hardcoded guess for the Android system nav bar, carried over from
 // v1.0. A 4th tab tightens the tab bar and this is the knob that shifts.
 // Upgrade path: react-native-safe-area-context, if Expo already provides it.
@@ -889,7 +897,294 @@ const ROUTE_META = [
 //           missing, non-numeric, or out of range - entry edges must pass
 //           { step: 1 }. Next (`${testPrefix}-primary`) pushes route with
 //           { step: step + 1 } until the last step, which pushes nextRoute.
-const BULK = {};
+//
+// Task 12 optional keys (see the extension note atop src/screens/generic.js):
+//   list.linkField, list.filter, detail.deepLinkField + detail.deepLinkLabel,
+//   and form/wizard.nextParams (static object merged into the final push -
+//   without it a form/wizard exit must target a route that needs no params).
+const BULK = {
+  // --- Notifications cluster (Home tab) -----------------------------------
+  Inbox: {
+    kind: "list",
+    title: "Notifications",
+    heading: "Inbox",
+    collection: "NOTIFICATIONS",
+    itemLabel: (item) => item.title,
+    itemSub: (item) => `${item.kind} - ${item.when}`,
+    itemRoute: "NotificationDetail",
+    itemParam: "notificationId",
+    testPrefix: "inbox"
+  },
+  NotificationDetail: {
+    kind: "detail",
+    title: "Notifications",
+    collection: "NOTIFICATIONS",
+    param: "notificationId",
+    label: "Notification",
+    titleField: "title",
+    rows: [["Kind", "kind"], ["Received", "when"], ["Message", "body"]],
+    actions: [{ label: "Notification settings", route: "NotificationSettings" }],
+    // 8 of 25 instances carry item.deepLink - the cross-cluster edges.
+    deepLinkField: "deepLink",
+    deepLinkLabel: "Open linked item",
+    testPrefix: "notification-detail"
+  },
+  NotificationSettings: {
+    kind: "form",
+    title: "Notifications",
+    heading: "Notification settings",
+    fields: [
+      { key: "summaryTime", label: "Daily summary time", placeholder: "8:00 AM", required: true },
+      { key: "mutedKeywords", label: "Muted keywords", placeholder: "invoice, promo", multiline: true }
+    ],
+    submitLabel: "Save settings",
+    nextRoute: "Inbox",
+    testPrefix: "notification-settings"
+  },
+
+  // --- Insurance cluster (Billing tab) -------------------------------------
+  Policies: {
+    kind: "list",
+    title: "Insurance",
+    heading: "Your policies",
+    collection: "POLICIES",
+    itemLabel: (item) => item.name,
+    itemSub: (item) => `${item.type} - ${item.premium}`,
+    itemRoute: "PolicyDetail",
+    itemParam: "policyId",
+    testPrefix: "policies"
+  },
+  PolicyDetail: {
+    kind: "detail",
+    title: "Insurance",
+    collection: "POLICIES",
+    param: "policyId",
+    label: "Policy",
+    titleField: "name",
+    rows: [
+      ["Type", "type"],
+      ["Premium", "premium"],
+      ["Renews", "renewal"],
+      ["Status", "status"],
+      ["Coverage", "coverage"]
+    ],
+    actions: [{ label: "Start a claim", route: "ClaimStart" }],
+    testPrefix: "policy-detail"
+  },
+  ClaimStart: {
+    kind: "detail",
+    title: "Insurance claim",
+    collection: "POLICIES",
+    param: "policyId",
+    label: "Policy",
+    titleField: "name",
+    rows: [["Type", "type"], ["Status", "status"], ["Coverage", "coverage"]],
+    actions: [{ label: "Begin claim", route: "ClaimWizard", params: { step: 1 } }],
+    testPrefix: "claim-start"
+  },
+  ClaimWizard: {
+    kind: "wizard",
+    title: "Insurance claim",
+    label: "Claim step",
+    route: "ClaimWizard",
+    steps: [
+      { heading: "What happened?", fields: [{ key: "incident", label: "Describe the incident", multiline: true }] },
+      { heading: "When and where?", fields: [{ key: "lossDate", label: "Date of loss", placeholder: "Apr 20" }, { key: "location", label: "Location" }] },
+      { heading: "Estimated cost", fields: [{ key: "estimate", label: "Estimated amount", placeholder: "$500" }] }
+    ],
+    submitLabel: "Submit claim",
+    nextRoute: "ClaimSubmitted",
+    nextParams: { claimId: "CLM-01" },
+    testPrefix: "claim-wizard"
+  },
+  ClaimSubmitted: {
+    kind: "detail",
+    title: "Insurance claim",
+    collection: "CLAIMS",
+    param: "claimId",
+    label: "Claim",
+    titleField: "label",
+    rows: [["Policy", "policy"], ["Status", "status"], ["Filed", "filed"], ["Decision window", "eta"]],
+    actions: [{ label: "Back to policies", route: "Policies" }],
+    testPrefix: "claim-submitted"
+  },
+
+  // --- Providers cluster (Profile tab) --------------------------------------
+  Directory: {
+    kind: "list",
+    title: "Providers",
+    heading: "Provider directory",
+    collection: "PROVIDERS",
+    itemLabel: (item) => item.name,
+    itemSub: (item) => `${item.specialty} - ${item.city}`,
+    itemRoute: "ProviderDetail",
+    itemParam: "providerId",
+    testPrefix: "directory"
+  },
+  ProviderDetail: {
+    kind: "detail",
+    title: "Providers",
+    collection: "PROVIDERS",
+    param: "providerId",
+    label: "Provider",
+    titleField: "name",
+    rows: [["Specialty", "specialty"], ["Rating", "rating"], ["City", "city"], ["Phone", "phone"]],
+    actions: [{ label: "Open message thread", route: "MessageThread" }],
+    testPrefix: "provider-detail"
+  },
+  MessageThread: {
+    kind: "list",
+    title: "Messages",
+    heading: "Provider thread",
+    collection: "MESSAGES",
+    itemLabel: (item) => `${item.from} - ${item.sent}`,
+    itemSub: (item) => item.body,
+    // Tapping a message opens the reply composer.
+    itemRoute: "ComposeMessage",
+    itemParam: "messageId",
+    testPrefix: "message-thread"
+  },
+  ComposeMessage: {
+    kind: "form",
+    title: "Messages",
+    heading: "New message",
+    fields: [
+      { key: "subject", label: "Subject", required: true },
+      { key: "body", label: "Message", multiline: true, required: true }
+    ],
+    submitLabel: "Send message",
+    nextRoute: "MessageThread",
+    testPrefix: "compose-message"
+  },
+
+  // --- Reminders cluster (Requests tab) -------------------------------------
+  RemindersMonth: {
+    kind: "list",
+    title: "Reminders",
+    heading: "This month",
+    collection: "REMINDER_DAYS",
+    itemLabel: (item) => item.day,
+    itemSub: (item) => `${item.count} reminders`,
+    itemRoute: "RemindersDay",
+    itemParam: "dayId",
+    testPrefix: "reminders-month"
+  },
+  RemindersDay: {
+    kind: "list",
+    title: "Reminders",
+    heading: "Day view",
+    collection: "REMINDERS",
+    // Per-instance content: only the selected day's 5 reminders. Total on a
+    // missing/unknown dayId so the anchor list renders in every state.
+    filter: (item, params) => {
+      const day = REMINDER_DAYS.find((entry) => entry.id === (params ? params.dayId : undefined));
+      return day ? item.day === day.day : true;
+    },
+    itemLabel: (item) => item.title,
+    itemSub: (item) => `${item.day} at ${item.time}`,
+    itemRoute: "ReminderDetail",
+    itemParam: "reminderId",
+    testPrefix: "reminders-day"
+  },
+  ReminderDetail: {
+    kind: "detail",
+    title: "Reminders",
+    collection: "REMINDERS",
+    param: "reminderId",
+    label: "Reminder",
+    titleField: "title",
+    rows: [["Day", "day"], ["Time", "time"], ["Repeats", "recurrence"], ["Note", "note"]],
+    actions: [{ label: "Change recurrence", route: "RecurrencePicker" }],
+    testPrefix: "reminder-detail"
+  },
+  RecurrencePicker: {
+    kind: "list",
+    title: "Reminders",
+    heading: "Repeat schedule",
+    collection: "RECURRENCES",
+    itemLabel: (item) => item.label,
+    itemSub: (item) => item.description,
+    // Picking a schedule flows into the creation form.
+    itemRoute: "CreateReminder",
+    itemParam: "recurrenceId",
+    testPrefix: "recurrence-picker"
+  },
+  CreateReminder: {
+    kind: "form",
+    title: "Reminders",
+    heading: "New reminder",
+    fields: [
+      { key: "title", label: "Reminder title", required: true },
+      { key: "day", label: "Day", placeholder: "Mon Apr 28", required: true },
+      { key: "time", label: "Time", placeholder: "8:00 AM" },
+      { key: "note", label: "Note", multiline: true }
+    ],
+    submitLabel: "Create reminder",
+    nextRoute: "RemindersMonth",
+    testPrefix: "create-reminder"
+  },
+
+  // --- Security & data cluster (Profile tab) --------------------------------
+  Security: {
+    kind: "list",
+    title: "Account",
+    heading: "Security & data",
+    collection: "SECURITY_ITEMS",
+    itemLabel: (item) => item.title,
+    itemSub: (item) => item.sub,
+    // Hub list: each row navigates to a different route via item.link.
+    linkField: "link",
+    testPrefix: "security"
+  },
+  ChangePassword: {
+    kind: "form",
+    title: "Security",
+    heading: "Change password",
+    fields: [
+      { key: "current", label: "Current password", required: true },
+      { key: "next", label: "New password", required: true },
+      { key: "confirm", label: "Confirm new password", required: true }
+    ],
+    submitLabel: "Update password",
+    nextRoute: "Security",
+    testPrefix: "change-password"
+  },
+  TwoFactorSetup: {
+    kind: "wizard",
+    title: "Two-factor setup",
+    label: "Setup step",
+    route: "TwoFactorSetup",
+    steps: [
+      { heading: "Add your phone", fields: [{ key: "phone", label: "Phone number", placeholder: "+1 555 014 2920" }] },
+      { heading: "Confirm the code", fields: [{ key: "code", label: "6-digit code", placeholder: "000000" }] }
+    ],
+    submitLabel: "Turn on 2FA",
+    nextRoute: "Security",
+    testPrefix: "twofactor-setup"
+  },
+  DataExport: {
+    kind: "detail",
+    title: "Your data",
+    collection: "EXPORTS",
+    param: "exportId",
+    label: "Export",
+    titleField: "label",
+    rows: [["Format", "format"], ["Size", "size"], ["Requested", "requested"], ["Status", "status"]],
+    actions: [{ label: "Check export status", route: "ExportStatus" }],
+    testPrefix: "data-export"
+  },
+  ExportStatus: {
+    kind: "detail",
+    title: "Export status",
+    collection: "EXPORTS",
+    param: "exportId",
+    label: "Export",
+    titleField: "status",
+    rows: [["Export", "label"], ["Format", "format"], ["Size", "size"], ["Requested", "requested"]],
+    actions: [{ label: "Back to security", route: "Security" }],
+    testPrefix: "export-status"
+  }
+};
 
 module.exports = {
   SERVICES,
@@ -914,6 +1209,7 @@ module.exports = {
   MESSAGES,
   SECURITY_ITEMS,
   EXPORTS,
+  CLAIMS,
   ANDROID_NAV_BAR_GAP_ANDROID,
   TAB_BAR_HEIGHT,
   ROUTE_META,
