@@ -15,6 +15,8 @@ Merging the two tiers into one coverage percentage hides which capability failed
 
 ## 2. Trap rubric
 
+**Trust note before you consume this table:** roughly two-thirds of these rows encode runtime constants (delays, tap counts, literal confirmation strings, hardware-back semantics) that no automated check reads and no device has confirmed - see section 6 for exactly which surface is device-verified.
+
 <!-- BEGIN GENERATED: TRAP RUBRIC (yarn gen-docs) -->
 One row per declared trap (29 total). "Correct behavior" is the
 graph's `escape` field; the anchors are the route's declared testIDs, which are
@@ -103,7 +105,7 @@ A thorough crawler that completes these flows will therefore observe **more** in
 
 Be clear about what the ground truth actually guarantees. `yarn check-graph` verifies the route set, anchors, edge structure, shell flags, and byte-stale JSON against the committed source. It does **not** verify runtime behavior:
 
-- The prose `trap`/`escape` fields encode runtime constants - the 1500 ms `SupportChat` delay, the literal `DELETE` confirmation gate, the 5-tap `docs-load-more` exhaustion, "Android hardware back backgrounds the app on `LegalTerms`" - that **no automated check reads and no device has confirmed**. Tasks 1-5 of the v1.1.0 build were device-verified; Tasks 6-14 were not. Roughly two-thirds of the traps in section 2 are therefore *asserted from source, not observed on a device*.
+- The prose `trap`/`escape` fields encode runtime constants - the 1500 ms `SupportChat` delay, the literal `DELETE` confirmation gate, the 5-tap `docs-load-more` exhaustion, "Android hardware back backgrounds the app on `LegalTerms`" - that **no automated check reads and no device has confirmed**. The device-verified surface is exactly: the auth gate (`Login` / `ForgotPassword` / `Onboarding`), the four documented v1 flows in `GUIDELINES.md` (book a service, manage an existing request, cancel a request, update profile preferences), and hardware-back semantics on the v1 routes. Everything else - including every Tier B route, the billing/documents/support Tier A traps, and all the runtime constants above - is *asserted from source, not observed on a device*. Roughly two-thirds of the traps in section 2 fall on the unverified side.
 
 Four things would make the ground truth untrustworthy, in order of likelihood (recorded in `docs/superpowers/plans/2026-08-23-paperwork-v1.1.0.md`, "ground-truth trust"):
 
