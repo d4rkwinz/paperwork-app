@@ -99,7 +99,7 @@ yarn start
 | `Security` | B | 1 | Hub list: each row navigates to a different route |
 | `ChangePassword` | B | 1 | Password-change form |
 | `TwoFactorSetup` | B | 2 | 2-step wizard keyed on params.step |
-| `DataExport` | B | 1 | Data-export request form |
+| `DataExport` | B | 1 | Data-export detail screen (seeded EXP-01) |
 | `ExportStatus` | B | 1 | Export status page |
 <!-- END GENERATED: APP MAP -->
 

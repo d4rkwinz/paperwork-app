@@ -69,7 +69,7 @@ const PURPOSE = {
   Security: "Hub list: each row navigates to a different route",
   ChangePassword: "Password-change form",
   TwoFactorSetup: "2-step wizard keyed on params.step",
-  DataExport: "Data-export request form",
+  DataExport: "Data-export detail screen (seeded EXP-01)",
   ExportStatus: "Export status page"
 };
 
