@@ -551,5 +551,5 @@ elif steps == "auth":
     sys.exit(0 if ok else 1)
 
 else:
-    print(f"unknown flow {steps!r}; expected flow1|flow2|flow3|flow4|back|auth")
+    print(f"unknown flow {steps!r}; expected flow1|flow2|flow3|flow4|back|auth|traps|slowload|deadend|anchors")
     sys.exit(2)
