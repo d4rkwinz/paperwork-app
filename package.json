@@ -15,6 +15,7 @@
     "selfcheck": "node scripts/selfcheck.js",
     "graph": "node -e \"const fs=require('fs');const {buildGraph}=require('./src/graph.js');fs.writeFileSync('crawler-expected-graph.json',JSON.stringify(buildGraph(),null,2)+'\\n')\"",
     "check-graph": "node scripts/check-graph.js",
+    "gen-docs": "node scripts/gen-docs.js",
     "render-check": "node scripts/render-check.js",
     "bundle-check": "expo export --platform ios --platform android --output-dir .expo/bundle-check --clear"
   },
