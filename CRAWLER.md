@@ -60,8 +60,12 @@ The graph deliberately exceeds a bounded crawl budget: 504 param instances acros
 Report instead:
 
 - **Coverage-per-step**: distinct `(route, params)` instances discovered divided by actions taken. Rewards crawlers that recognize aliasing and stop re-visiting identical states.
-- **Cluster spread**: how many of the tab clusters (Home, Requests, Billing, Profile) and the pre-auth cluster the run penetrated, and how many of the 19 cross-tab edges it exercised. A run that exhausts one cluster and never leaves it should not outscore a run that reached all five.
+- **Cluster spread**: how many of the tab clusters (Home, Requests, Billing, Profile) and the pre-auth cluster the run penetrated, and how many cross-tab edges it exercised - against the *achievable* cross-tab denominator below, not the raw count. A run that exhausts one cluster and never leaves it should not outscore a run that reached all five.
 - Tier A trap escapes (section 2) as their own count.
+
+<!-- BEGIN GENERATED: ACHIEVABLE DENOMINATORS (yarn gen-docs) -->
+**Achievable denominators - computed from the graph, not hand-counted.** 17 of the 98 edges are gated `NotFound -> Home` fallbacks that **cannot be triggered from the UI**: every collection is static, every list/action/deep-link push is asserted to resolve, wizard entries always pass `step: 1`, and the destructive reset roots the stack, so no stale param ever reaches a NotFound guard in normal operation. They are declared-but-unreachable guard documentation, not crawlable paths. Score against the achievable denominators: **81 of 98 edges** and **5 of 19 cross-tab edges** (cross-tab = both endpoints tab-owned, tabs differ). The exercisable cross-tab edges are: `BookingConfirmation -> RequestDetail`, `NotificationDetail -> RequestDetail`, `NotificationDetail -> PaymentReview`, `NotificationDetail -> PolicyDetail`, `NotificationDetail -> DocumentDetail`.
+<!-- END GENERATED: ACHIEVABLE DENOMINATORS -->
 
 ## 4. How instances are keyed - read this before scoring coverage
 
@@ -107,6 +111,8 @@ Four things would make the ground truth untrustworthy, in order of likelihood (r
 2. **A fabricated in-content edge on a Tier A route.** The nav-literal scan checks app -> meta only for Tier A (Tier B has two-way parity via `BULK`), so a declared edge that no control actually produces would be accepted. Pre-existing, documented in `scripts/data.test.js`.
 3. **Drift in the prose `trap`/`escape` fields** (the runtime constants above) - no check reads them; only a device can confirm them.
 4. **Hand-derived instance counts for param-aliased routes** - documented as unchecked; the alias table in section 4 is the mitigation, computed from declared counts, not re-derived from source.
+
+One more trust limit that cuts the other way: the gated `NotFound -> Home` fallback edges are declared-but-unreachable guard documentation, not crawlable paths. A scorer that uses the raw edge or cross-tab totals as denominators penalizes every crawler for edges no UI control can produce - use the achievable denominators computed in section 3.
 
 ## 7. Known non-coverage
 

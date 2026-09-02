@@ -187,6 +187,35 @@ function aliasTable() {
   return lines.join("\n");
 }
 
+// Scoring denominators, computed from the graph so they cannot drift.
+// "Cross-tab" = both endpoints owned by a tab and the tabs differ (the
+// definition behind the historical 19). Gated edges targeting Home are the
+// NotFound fallbacks: declared guard documentation that no UI control can
+// trigger, so they are excluded from the achievable denominators.
+function achievableDenominators() {
+  const tab = Object.fromEntries(graph.nodes.map((n) => [n.name, n.tab]));
+  const isGatedHome = (e) => e.gated && e.to === "Home";
+  const gatedHome = graph.edges.filter(isGatedHome);
+  const crossTab = graph.edges.filter(
+    (e) => tab[e.from] && tab[e.to] && tab[e.from] !== tab[e.to]
+  );
+  const ctExercisable = crossTab.filter((e) => !isGatedHome(e));
+  const ctList = ctExercisable.map((e) => `\`${e.from} -> ${e.to}\``).join(", ");
+  return [
+    `**Achievable denominators - computed from the graph, not hand-counted.** ` +
+      `${gatedHome.length} of the ${graph.edges.length} edges are gated \`NotFound -> Home\` ` +
+      "fallbacks that **cannot be triggered from the UI**: every collection is static, every " +
+      "list/action/deep-link push is asserted to resolve, wizard entries always pass `step: 1`, " +
+      "and the destructive reset roots the stack, so no stale param ever reaches a NotFound " +
+      "guard in normal operation. They are declared-but-unreachable guard documentation, not " +
+      "crawlable paths. Score against the achievable denominators: " +
+      `**${graph.edges.length - gatedHome.length} of ${graph.edges.length} edges** and ` +
+      `**${ctExercisable.length} of ${crossTab.length} cross-tab edges** ` +
+      `(cross-tab = both endpoints tab-owned, tabs differ). The exercisable cross-tab edges ` +
+      `are: ${ctList}.`
+  ].join("\n");
+}
+
 function splice(file, sections) {
   const p = path.join(__dirname, "..", file);
   let text = fs.readFileSync(p, "utf8");
@@ -203,4 +232,8 @@ function splice(file, sections) {
 }
 
 splice("GUIDELINES.md", { "APP MAP": appMap() });
-splice("CRAWLER.md", { "TRAP RUBRIC": trapRubric(), "ALIAS TABLE": aliasTable() });
+splice("CRAWLER.md", {
+  "TRAP RUBRIC": trapRubric(),
+  "ALIAS TABLE": aliasTable(),
+  "ACHIEVABLE DENOMINATORS": achievableDenominators()
+});
