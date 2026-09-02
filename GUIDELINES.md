@@ -21,7 +21,7 @@ yarn start
 ## App Map
 
 <!-- BEGIN GENERATED: APP MAP (yarn gen-docs) -->
-54 routes (12 v1 / 20 Tier A / 22 Tier B), 99 edges, 504 param instances - counts computed from `crawler-expected-graph.json`. Tier A routes are exhaustively addressed (every interactive element carries a `testID`); Tier B routes are deliberately sparse - only `${testPrefix}-primary` and `${testPrefix}-list` carry testIDs, everything else is addressable by accessibility label or text only. See `CRAWLER.md` for what that split measures.
+54 routes (12 v1 / 20 Tier A / 22 Tier B), 100 edges, 504 param instances - counts computed from `crawler-expected-graph.json`. Tier A routes are exhaustively addressed (every interactive element carries a `testID`); Tier B routes are deliberately sparse - only `${testPrefix}-primary` and `${testPrefix}-list` carry testIDs, everything else is addressable by accessibility label or text only. See `CRAWLER.md` for what that split measures.
 
 ### Pre-auth and untabbed
 

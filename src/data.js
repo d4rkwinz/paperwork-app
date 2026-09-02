@@ -401,10 +401,15 @@ const TAB_BAR_HEIGHT = 72;
 //   nav.replace, nav.root, or nav.back). So AddCard -> PaymentMethods
 //   (card-submit calls nav.back()) and LegalTerms -> Preferences
 //   (legal-close calls nav.back()) are edges: for a nav.back() edge, the
-//   target is the route that pushed this one. Every route that renders the
-//   NotFound guard gets a "Home, gated: true" edge from notfound-home's
-//   nav.root("Home") - gated because it only renders when the route's
-//   params dereference fails.
+//   target is the route that pushed this one; a route pushed by more than
+//   one parent gets one back-edge per parent (DocumentDetail -> Documents
+//   plus DocumentDetail -> NotificationDetail, the deep-link entry). Every
+//   route that renders the NotFound guard gets a "Home, gated: true" edge
+//   from notfound-home's nav.root("Home") - gated because it only renders
+//   when the route's params dereference fails. gated: true generally marks
+//   an edge available only in some states or entry paths of the route: the
+//   NotFound fallback, NotificationDetail's 8-of-25 deep-link button, or a
+//   back target that depends on which parent pushed the route.
 //
 //   Chrome back is NOT modeled: the shell's top-bar back button and Android
 //   hardware back are universal stack behavior available on every
@@ -865,9 +870,14 @@ const ROUTE_META = [
     noTabs: false,
     terminal: false,
     trap: "Param explosion - one route reachable with 60 distinct docId params; the correct model is 1 route with 60 instances, not 60 routes and not 1 state",
-    escape: "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents",
+    escape: "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents - or to NotificationDetail when entered via its deep link, since nav.back targets whichever route pushed this one",
     edges: [
       { to: "Documents", requiresInput: false, gated: false, cycle: true },
+      // doc-detail-back is a nav.back() edge, so its target is the pusher:
+      // Documents on the normal path, NotificationDetail when entered via the
+      // 'Open linked item' deep link. Gated because the second target is only
+      // reachable from that entry path.
+      { to: "NotificationDetail", requiresInput: false, gated: true, cycle: true },
       { to: "Home", requiresInput: false, gated: true, cycle: false }
     ]
   },

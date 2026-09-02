@@ -405,7 +405,7 @@
       "noTabs": false,
       "terminal": false,
       "trap": "Param explosion - one route reachable with 60 distinct docId params; the correct model is 1 route with 60 instances, not 60 routes and not 1 state",
-      "escape": "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents"
+      "escape": "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents - or to NotificationDetail when entered via its deep link, since nav.back targets whichever route pushed this one"
     },
     {
       "name": "HelpCenter",
@@ -1187,6 +1187,13 @@
     },
     {
       "from": "DocumentDetail",
+      "to": "NotificationDetail",
+      "requiresInput": false,
+      "gated": true,
+      "cycle": true
+    },
+    {
+      "from": "DocumentDetail",
       "to": "Home",
       "requiresInput": false,
       "gated": true,
@@ -1587,7 +1594,7 @@
     {
       "route": "DocumentDetail",
       "trap": "Param explosion - one route reachable with 60 distinct docId params; the correct model is 1 route with 60 instances, not 60 routes and not 1 state",
-      "escape": "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents"
+      "escape": "Each doc-{id} row on Documents pushes here with its own docId; doc-detail-back returns to Documents - or to NotificationDetail when entered via its deep link, since nav.back targets whichever route pushed this one"
     },
     {
       "route": "HelpCenter",
