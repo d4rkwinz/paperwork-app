@@ -94,6 +94,8 @@ A crawler that dedupes by rendered state reports **105** fewer instances across 
 
 Reconciling one inconsistency in the graph: `ComposeMessage` and `CreateReminder` have exactly the same param-aliasing property as `NotificationSettings`, `RecurrencePicker`, and `MessageThread`, but carry `trap: null` while those three declare aliasing as their trap. That is deliberate triage, not an oversight: the trap field marks the *scored* traps, and the three declared ones carry the alias pressure at scale (25/45/30 instances) while `ComposeMessage` (6) and `CreateReminder` (4) repeat the same lesson at sizes too small to score separately. For instance-counting purposes treat all five identically - the alias table above already does.
 
+A second declared exception: `BookingReview` ships `instances: 1` even though `BookingForm` pushes it with a 24-way `booking.serviceId` fan-in - by the rule its siblings follow (`EditRequest`/`EditRequestReview` count 15, one per Active request), it would be 24. The difference: it is pushed with a whole free-form booking draft (`{ booking }` - date, time, address, notes), not a data-derived id, so any count keyed on one field of that object is arbitrary; the graph keeps the conservative 1. A crawler that books several services and reports multiple `BookingReview` instances keyed by `serviceId` is behaving correctly and must not be scored as overcounting.
+
 ## 5. `instances` are seed-state counts, not live counts
 
 The fixture is stateful and two flows create entities at runtime with `Math.random()` ids:
