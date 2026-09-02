@@ -1,6 +1,6 @@
 # CRAWLER.md - scoring a crawler run against Paperwork v1.1.0
 
-This is the scoring rubric for the Paperwork fixture. The ground truth is `crawler-expected-graph.json` (54 routes, 98 edges, 504 param instances, 29 declared traps), regenerated from `src/data.js`'s `ROUTE_META` by `yarn graph` and byte-guarded by `yarn check-graph`. The tables below marked GENERATED are produced from that JSON by `yarn gen-docs`, so they cannot drift from the graph.
+This is the scoring rubric for the Paperwork fixture. The ground truth is `crawler-expected-graph.json` (54 routes, 99 edges, 504 param instances, 29 declared traps), regenerated from `src/data.js`'s `ROUTE_META` by `yarn graph` and byte-guarded by `yarn check-graph`. The tables below marked GENERATED are produced from that JSON by `yarn gen-docs`, so they cannot drift from the graph.
 
 ## 1. What this measures
 
@@ -24,7 +24,7 @@ what a scored run must show it reached.
 | --- | --- | --- | --- | --- |
 | `Login` | A | Gate: crawler must type into two fields to progress | Type both fields and submit, or tap login-guest | `login-submit` |
 | `ForgotPassword` | A | Off-path branch; 2 states on 1 route | Reachable from login-forgot; forgot-back returns to Login | `forgot-back` |
-| `Onboarding` | A | State aliasing - 3 near-identical states on one route | 3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut | `onboarding-next` |
+| `Onboarding` | A | State aliasing - 3 near-identical states on one route | 3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut. Below step 3, onboarding-next re-pushes this same route with step + 1 (the declared self-edge) | `onboarding-next` |
 | `Requests` | v1 | Overlay state that is not a route - the filter lives in a bottom-sheet Modal, so request-filter-* options exist only while the sheet is open, and opening/closing it changes screen state, never the route | Tap open-filter-sheet, then tap a request-filter-{value} option (applies the filter and closes the sheet); close-filter-sheet or Android hardware back dismisses without changing the filter | `open-filter-sheet` |
 | `Reschedule` | A | Precondition-gated edge - reschedule-request renders on RequestDetail only while request.status is Active, so this route is invisible from Completed/Canceled requests | Enter from an Active request (e.g. REQ-1042 or REQ-1038); Completed REQ-0977 legitimately has no reschedule-request control - the missing edge is correct, not a crawler gap | `reschedule-submit` |
 | `Search` | A | Requires generated input - results render only when the trimmed query is >= 2 chars, so a crawler that never types sees 0 new edges | Type at least 2 characters into search-input (e.g. "pl" matches Plumber); a single character still shows search-empty; tap a search-result-{serviceId} row to reach ServiceDetail | `search-input` |
@@ -64,7 +64,7 @@ Report instead:
 - Tier A trap escapes (section 2) as their own count.
 
 <!-- BEGIN GENERATED: ACHIEVABLE DENOMINATORS (yarn gen-docs) -->
-**Achievable denominators - computed from the graph, not hand-counted.** 17 of the 98 edges are gated `NotFound -> Home` fallbacks that **cannot be triggered from the UI**: every collection is static, every list/action/deep-link push is asserted to resolve, wizard entries always pass `step: 1`, and the destructive reset roots the stack, so no stale param ever reaches a NotFound guard in normal operation. They are declared-but-unreachable guard documentation, not crawlable paths. Score against the achievable denominators: **81 of 98 edges** and **5 of 19 cross-tab edges** (cross-tab = both endpoints tab-owned, tabs differ). The exercisable cross-tab edges are: `BookingConfirmation -> RequestDetail`, `NotificationDetail -> RequestDetail`, `NotificationDetail -> PaymentReview`, `NotificationDetail -> PolicyDetail`, `NotificationDetail -> DocumentDetail`.
+**Achievable denominators - computed from the graph, not hand-counted.** 17 of the 99 edges are gated `NotFound -> Home` fallbacks that **cannot be triggered from the UI**: every collection is static, every list/action/deep-link push is asserted to resolve, wizard entries always pass `step: 1`, and the destructive reset roots the stack, so no stale param ever reaches a NotFound guard in normal operation. They are declared-but-unreachable guard documentation, not crawlable paths. Score against the achievable denominators: **82 of 99 edges** and **5 of 19 cross-tab edges** (cross-tab = both endpoints tab-owned, tabs differ). The exercisable cross-tab edges are: `BookingConfirmation -> RequestDetail`, `NotificationDetail -> RequestDetail`, `NotificationDetail -> PaymentReview`, `NotificationDetail -> PolicyDetail`, `NotificationDetail -> DocumentDetail`.
 <!-- END GENERATED: ACHIEVABLE DENOMINATORS -->
 
 ## 4. How instances are keyed - read this before scoring coverage

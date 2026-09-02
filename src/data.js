@@ -456,8 +456,13 @@ const ROUTE_META = [
     noTabs: true,
     terminal: false,
     trap: "State aliasing - 3 near-identical states on one route",
-    escape: "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut",
-    edges: [{ to: "Home", requiresInput: false, gated: false, cycle: false }]
+    escape: "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut. Below step 3, onboarding-next re-pushes this same route with step + 1 (the declared self-edge)",
+    edges: [
+      { to: "Home", requiresInput: false, gated: false, cycle: false },
+      // onboarding-next below step 3: nav.push("Onboarding", { step: step + 1 }),
+      // the same step-advance self-edge mechanic ClaimWizard/TwoFactorSetup declare.
+      { to: "Onboarding", requiresInput: false, gated: false, cycle: true }
+    ]
   },
   {
     name: "Home",

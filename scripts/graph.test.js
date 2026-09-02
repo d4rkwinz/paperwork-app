@@ -82,7 +82,7 @@ assert.strictEqual(
   504,
   "total param instances match the spec (504)"
 );
-assert.strictEqual(g.edges.length, 98, "edge count matches the spec (98)");
+assert.strictEqual(g.edges.length, 99, "edge count matches the spec (99)");
 
 // Addressing policy: Tier A and v1 routes are exhaustively addressed and must
 // declare at least one testID anchor, so check-graph can verify them. Tier B is

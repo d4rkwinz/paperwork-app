@@ -45,7 +45,7 @@
       "noTabs": true,
       "terminal": false,
       "trap": "State aliasing - 3 near-identical states on one route",
-      "escape": "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut"
+      "escape": "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut. Below step 3, onboarding-next re-pushes this same route with step + 1 (the declared self-edge)"
     },
     {
       "name": "Home",
@@ -850,6 +850,13 @@
       "cycle": false
     },
     {
+      "from": "Onboarding",
+      "to": "Onboarding",
+      "requiresInput": false,
+      "gated": false,
+      "cycle": true
+    },
+    {
       "from": "Home",
       "to": "ServiceDetail",
       "requiresInput": false,
@@ -1515,7 +1522,7 @@
     {
       "route": "Onboarding",
       "trap": "State aliasing - 3 near-identical states on one route",
-      "escape": "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut"
+      "escape": "3 distinct states recorded, terminates at step 3; onboarding-skip is the shortcut. Below step 3, onboarding-next re-pushes this same route with step + 1 (the declared self-edge)"
     },
     {
       "route": "Requests",
