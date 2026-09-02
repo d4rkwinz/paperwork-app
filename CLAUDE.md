@@ -13,7 +13,7 @@ Paperwork is an Expo React Native app whose sole purpose is to be a **test targe
 Package manager is **yarn** (`packageManager: yarn@1.22.22`).
 
 - `yarn install` — install deps
-- `yarn start` / `yarn ios` / `yarn android` / `yarn web` — Metro dev server / run on a target
+- `yarn start` / `yarn ios` / `yarn android` — Metro dev server / run on a target (`yarn web` is defined in package.json but non-functional: `react-native-web` is not a dependency)
 
 **Node 22 is required** (`.nvmrc` → `22.22.0`); Expo's local port scanner fails on Node 25. Run `nvm use` first.
 
